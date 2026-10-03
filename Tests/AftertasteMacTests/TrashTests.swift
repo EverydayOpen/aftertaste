@@ -252,7 +252,7 @@ final class TrashTests: MacTestCase {
         item.sizeState = .atLeast
         let outcome = await sb.trash(sb.plan([item]))
         try requireTrash(outcome)
-        let results = Journal.loadAll(home: sb.home).filter { $0.phase == .result && $0.runID == outcome.runID }
+        let results = Journal.loadAll(home: sb.home).filter { $0.verb == .trash && $0.phase == .result && $0.runID == outcome.runID }
         XCTAssertEqual(results.map(\.lowerBound), [true])
     }
 }
