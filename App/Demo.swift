@@ -60,7 +60,7 @@ enum Demo {
         case .firstRun: scenario = .firstRun
         case .readiness: scenario = .snapshots
         case .quiet: scenario = .quiet
-        default: if name.map { key($0) } == "blocked" { scenario = .blocked }
+        default: if name.map(key) == "blocked" { scenario = .blocked }
         }
         if let given { scenario = parse(given) }
         return (screen, scenario)
