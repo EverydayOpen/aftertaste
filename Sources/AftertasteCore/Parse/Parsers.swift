@@ -90,8 +90,13 @@ public enum Parsers {
     }
 
     /// nil unless `CFBundleIdentifier` passes `StrictBundleID`.
-    public static func infoPlist(_ data: Data) -> InfoPlist? {
-        guard let d = dictionary(data), let id = text(d["CFBundleIdentifier"]), StrictBundleID.isValid(id) else { return nil }
+    public static func infoPlist(_ data: Data) -> InfoPlist? { infoPlist(data, accepts: StrictBundleID.isValid) }
+
+    /// For an installed app that only protects files: the bundle ID need only be usable (see `Subject.isUsableLiveID`).
+    public static func liveInfoPlist(_ data: Data) -> InfoPlist? { infoPlist(data, accepts: Subject.isUsableLiveID) }
+
+    private static func infoPlist(_ data: Data, accepts: (String) -> Bool) -> InfoPlist? {
+        guard let d = dictionary(data), let id = text(d["CFBundleIdentifier"]), accepts(id) else { return nil }
         let lastLabel = id.split(separator: ".").last.map(String.init) ?? id
         let exec = text(d["CFBundleExecutable"])
         let name = text(d["CFBundleDisplayName"]) ?? text(d["CFBundleName"]) ?? exec ?? lastLabel
