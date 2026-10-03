@@ -1,6 +1,7 @@
 #if DEBUG
 import AftertasteCore
 import AppKit
+import Combine
 import SwiftUI
 
 /// Screenshots (.github/workflows/screens.yml), DEBUG builds only (BUILD_PLAN §9). A launch argument opens one screen on
@@ -74,12 +75,18 @@ enum Demo {
     }
 
     private static var started = false
+    private static var sink: AnyCancellable?
 
     /// Called by AppModel.init, after the demo backend is in place.
     @MainActor static func start(_ model: AppModel) {
         guard let demo = setup, !started else { return }
         started = true
         trace("start screen=\(demo.screen) prefsSeen=\(model.prefs.hasSeenFirstRun)")
+        var changes = 0
+        sink = model.objectWillChange.sink { _ in
+            changes += 1
+            if changes >= 300 && changes < 303 { trace("change #\(changes)\n" + Thread.callStackSymbols.prefix(14).joined(separator: "\n")) }
+        }
         if let look = argument("demoAppearance") {
             NSApplication.shared.appearance = NSAppearance(named: look == "dark" ? .darkAqua : .aqua)
         }

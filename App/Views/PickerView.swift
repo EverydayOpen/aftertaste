@@ -13,7 +13,7 @@ struct PickerView: View {
     @State private var risen = false
 
     var body: some View {
-        let _ = Self._printChanges()
+        
         ZStack {
             Dawn()
             HStack(alignment: .top, spacing: Space.xl) {

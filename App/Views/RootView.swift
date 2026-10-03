@@ -15,7 +15,7 @@ struct RootView: View {
     }
 
     var body: some View {
-        let _ = Self._printChanges()
+        
         screenView
             .frame(minWidth: 760, minHeight: 560)
             .overlay { cover }
