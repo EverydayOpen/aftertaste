@@ -1,7 +1,6 @@
 #if DEBUG
 import AftertasteCore
 import AppKit
-import Combine
 import SwiftUI
 
 /// Screenshots (.github/workflows/screens.yml), DEBUG builds only (BUILD_PLAN §9). A launch argument opens one screen on
@@ -75,18 +74,11 @@ enum Demo {
     }
 
     private static var started = false
-    private static var sink: AnyCancellable?
 
     /// Called by AppModel.init, after the demo backend is in place.
     @MainActor static func start(_ model: AppModel) {
         guard let demo = setup, !started else { return }
         started = true
-        trace("start screen=\(demo.screen) prefsSeen=\(model.prefs.hasSeenFirstRun)")
-        var changes = 0
-        sink = model.objectWillChange.sink { _ in
-            changes += 1
-            if changes >= 300 && changes < 303 { trace("change #\(changes)\n" + Thread.callStackSymbols.prefix(14).joined(separator: "\n")) }
-        }
         if let look = argument("demoAppearance") {
             NSApplication.shared.appearance = NSAppearance(named: look == "dark" ? .darkAqua : .aqua)
         }
@@ -104,9 +96,7 @@ enum Demo {
     }
 
     @MainActor private static func run(_ screen: Screen, _ model: AppModel) async {
-        trace("run begin installed=\(model.installed?.apps.count ?? -1)")
         if model.installed == nil { await model.start() }   // RootView's .task does the same; whichever comes first
-        trace("run after start installed=\(model.installed?.apps.count ?? -1)")
         switch screen {
         case .picker, .firstRun: model.screen = .welcome
         case .readiness:
@@ -200,8 +190,6 @@ enum Demo {
 
     /// A run that reports the first `fraction` of its items as moved, evenly over `seconds`, then waits (the `running`
     /// capture). The real Trasher is never involved: this is a Backend closure in demo mode only.
-    static func trace(_ s: String) { FileHandle.standardError.write(Data(("[demo] " + s + "\n").utf8)) }
-
     private static func hang(_ plan: TrashPlan, _ progress: @Sendable (ItemOutcome) -> Void, seconds: Double, at fraction: Double) async -> TrashOutcome {
         let started = Date()
         let reported = Int((Double(plan.items.count) * fraction).rounded(.down))

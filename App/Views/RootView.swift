@@ -15,7 +15,6 @@ struct RootView: View {
     }
 
     var body: some View {
-        
         screenView
             .frame(minWidth: 760, minHeight: 560)
             .overlay { cover }

@@ -13,7 +13,6 @@ struct PickerView: View {
     @State private var risen = false
 
     var body: some View {
-        
         ZStack {
             Dawn()
             HStack(alignment: .top, spacing: Space.xl) {

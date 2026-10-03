@@ -25,7 +25,10 @@ struct AftertasteApp: App {
         .commands { AftertasteCommands(model: model) }
 
         // Only inserted while the preference is on. A thin "Open Aftertaste": the window is the app.
-        MenuBarExtra(isInserted: $model.prefs.showMenuBarItem) {
+        // A plain `$model.prefs.showMenuBarItem` is written back on every scene update and a @Published publishes even an
+        // equal value, so the app re-rendered without end (about 4000 times in 15 s on a CI runner). Write only a change.
+        MenuBarExtra(isInserted: Binding(get: { model.prefs.showMenuBarItem },
+                                         set: { if model.prefs.showMenuBarItem != $0 { model.prefs.showMenuBarItem = $0 } })) {
             OpenAftertasteMenu()
         } label: {
             Image(nsImage: MenuBarIcon.glyph).accessibilityLabel("Aftertaste")
