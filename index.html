@@ -87,22 +87,22 @@
         </div>
         <div class="tray" aria-hidden="true"><span class="label">Trash</span><b class="count">2</b></div>
         <div class="report-wrap">
-          <figure class="report" id="hero-card" role="img" aria-label="Illustration with sample data: the Aftertaste Trace Report card. Orbit Meet 6.2 left behind: 214 files, 1.3 GB, 2 launch agents, 1 privileged helper. Looked in 25 of 26 places. 1 protected by macOS. Launch agents and helpers are listed, not removed. macOS 26.1, scanned 2026-10-03, measured on this Mac, nothing sent anywhere. On the back: this is a list of what was found in the places listed above; it is not proof that anything was erased.">
+          <figure class="report" id="hero-card" role="img" aria-label="Illustration with sample data: the Aftertaste Trace Report card. Orbit Meet 6.2 left behind: 214 files, 1.3 GB, 2 launch agents, 1 privileged helper. Looked in 25 of 26 places. 1 protected by macOS. Launch agents and helpers are listed, not removed. macOS 26.1, scanned 2026-10-03, measured on this Mac, nothing sent anywhere. On the back: this is a list of what was found in the places listed above. It is not proof that anything was erased; not covered: keychain items · login and background item records · launch services and spotlight entries · icloud data · other users on this mac · backups and snapshots · system folders under /private/var (installer receipts are listed by name).">
             <div class="face front">
               <p class="card-brand"><svg aria-hidden="true"><use href="#i-mark"/></svg>Aftertaste<span class="tag violet">Sample data</span></p>
-              <p class="card-h"><b>Orbit Meet 6.2</b> left behind</p>
-              <p class="card-figs"><b>214</b> files · <b>1.3</b> GB · <b>2</b> launch agents · <b>1</b> privileged helper</p>
-              <p class="card-cov">Looked in 25 of 26 places. 1 protected by macOS.<br>Launch agents and helpers are listed, not removed.</p>
-              <p class="card-prov">macOS 26.1 · scanned 2026-10-03 · measured on this Mac, nothing sent anywhere<span>everydayopen.github.io/aftertaste</span></p>
+<p class="card-h"><b>Orbit Meet 6.2</b> left behind</p>
+<p class="card-figs"><b>214</b> files · <b>1.3</b> GB · <b>2</b> launch agents · <b>1</b> privileged helper</p>
+<p class="card-cov">Looked in 25 of 26 places. 1 protected by macOS.<br>Launch agents and helpers are listed, not removed.</p>
+<p class="card-prov"><span>macOS 26.1 · scanned 2026-10-03</span><span>measured on this Mac, nothing sent anywhere</span><span>everydayopen.github.io/aftertaste</span></p>
             </div>
             <div class="face back">
               <p class="card-foot">This is a list of what was found in the places listed above. It is not proof that anything was erased.</p>
-              <p class="card-nc"><span class="label">Not covered</span>keychain items · login and background item records · Launch Services and Spotlight entries · iCloud data · other users · backups and snapshots</p>
+<p class="card-nc"><span class="label">Not covered</span>Keychain items · Login and background item records · Launch Services and Spotlight entries · iCloud data · Other users on this Mac · Backups and snapshots · System folders under /private/var (installer receipts are listed by name)</p>
             </div>
           </figure>
           <button class="button secondary report-flip" type="button" data-flip aria-controls="hero-card" aria-pressed="false" hidden>Turn the card over</button>
         </div>
-        <button class="button stack-move" type="button" data-sweep="Reset demo" data-sweep-said="Sample: moved 2 items to the Trash. The Medium items and 2 launch agents were left where they were." data-sweep-reset="Demo reset" aria-controls="hero-scene" aria-pressed="false" hidden>Move 2 items to Trash</button>
+        <button class="button stack-move" type="button" data-sweep="Reset demo" data-sweep-said="Sample: moved 2 items (435 MB) to the Trash. The Medium items, the 2 launch agents and the helper were left where they were." data-sweep-reset="Demo reset" aria-controls="hero-scene" aria-pressed="false" hidden>Move 2 items to Trash</button>
         <p class="sr-only" role="status" aria-live="polite" data-sweep-status></p>
       </div>
     </div>
@@ -139,12 +139,13 @@
     </figure>
     <article class="card group reveal" data-tilt>
       <div class="group-top"><span class="well"><svg aria-hidden="true"><use href="#k-app"/></svg></span><b>Orbit Meet 6.2</b><span class="tag">Not installed</span></div>
-      <p class="group-stats"><strong>1.3 GB</strong><span>214 files · not installed</span></p>
+      <p class="group-stats"><strong>1.3 GB</strong><span>10 items · 214 files</span></p>
+      <p class="tiers"><em class="tag violet">2 High</em><em class="tag">5 Medium</em><span>3 listed only</span></p>
       <div class="rbar" role="img" aria-label="Sample data: one bar for Orbit Meet 6.2. High, selected: caches 412 MB, logs 22.4 MB. Medium, not selected: saved state, WebKit 65.3 MB; web storage, settings 1.6 MB; your data 796 MB. 2 launch agents, listed only."><i class="hi"></i><i class="hi"></i><i></i><i></i><i></i><i></i></div>
     <ul class="rbar-key" aria-hidden="true"><li class="hi">Caches 412 MB</li><li class="hi">Logs 22.4 MB</li><li>Saved state, WebKit 65.3 MB</li><li>Web storage, settings 1.6 MB</li><li>Your data 796 MB</li><li>Launch agents 2</li></ul>
     <p class="rbar-sum">435 MB selected (rebuilds itself) · 863 MB not selected · 2 launch agents listed</p>
       <ul class="rows">
-        <li class="ro hi"><span class="t"><b>Caches</b><code>~/Library/Caches/com.example.orbitmeet</code></span><span class="sz">412 MB</span><em class="tag violet">High</em><p>Named exactly <code>com.example.orbitmeet</code>, the bundle ID of Orbit Meet. Rebuilt automatically.</p></li>
+        <li class="ro hi"><span class="t"><b>Caches</b><code>~/Library/Caches/<wbr>com.example.orbitmeet</code></span><span class="sz">412 MB</span><em class="tag violet">High</em><p>Named exactly <code>com.example.orbitmeet</code>, the bundle ID of Orbit Meet. Rebuilt automatically.</p></li>
       </ul>
     </article>
   </div>
@@ -177,6 +178,7 @@
     <h2>To the Trash, with Undo.</h2>
     <p class="lede">Tick what you want gone, read the list once more, press the button. Items go to the Trash one at a time, and every move is written down first so Undo can put it back.</p>
   </div>
+  <div class="duo">
   <ul class="slabs col reveal" data-tilt role="img" aria-label="Sample data: five rows for Orbit Meet 6.2. Caches 412 MB, High. Logs 22.4 MB, High. Your data 796 MB, Medium. Launch agents 2, Hands off. Privileged helper 1, Needs admin.">
     <li><svg aria-hidden="true"><use href="#k-cache"/></svg><span>Caches</span><b>412 MB</b><em class="tag violet">High</em></li>
     <li><svg aria-hidden="true"><use href="#k-logs"/></svg><span>Logs</span><b>22.4 MB</b><em class="tag violet">High</em></li>
@@ -184,6 +186,16 @@
     <li class="listed"><svg aria-hidden="true"><use href="#k-launch"/></svg><span>Launch agents</span><b>2</b><em class="tag">Hands off</em></li>
     <li class="listed"><svg aria-hidden="true"><use href="#k-shared"/></svg><span>Privileged helper</span><b>1</b><em class="tag">Needs admin</em></li>
   </ul>
+  <figure class="card journal reveal" role="img" aria-label="Sample data: a History entry after the two High items were moved. Orbit Meet 6.2, 2 items, 435 MB, in the Trash. Caches 412 MB and Logs 22.4 MB, each with an Undo button. The Medium items and the listed ones were left where they were.">
+    <div class="jr-top"><b>Orbit Meet 6.2</b><em class="tag">Sample data</em></div>
+    <p class="jr-sub">2 items · 435 MB · in the Trash</p>
+    <ul aria-hidden="true">
+      <li><span class="t"><b>Caches</b><code>~/Library/Caches/<wbr>com.example.orbitmeet</code></span><span class="sz">412 MB</span><i>Undo</i></li>
+      <li><span class="t"><b>Logs</b><code>~/Library/Logs/<wbr>com.example.orbitmeet</code></span><span class="sz">22.4 MB</span><i>Undo</i></li>
+    </ul>
+    <p class="jr-foot" aria-hidden="true">Written to the journal before each move. Undo works until you empty the Trash.</p>
+  </figure>
+  </div>
   <p class="receipt reveal">Re-checked right before each move · same file, same place, app not running · <b>Trash</b>, never delete · every move in the journal · <b>Undo</b> from History until you empty the Trash</p>
   <p class="note">Sample data. Space is freed when you empty the Trash, not before, and Aftertaste does not empty it for you.</p>
 </section>
@@ -191,7 +203,20 @@
 <section id="report" class="wrap">
   <div class="sec-head">
     <h2>A receipt with measured numbers only.</h2>
-    <p class="lede">The Trace Report is a card, a Markdown file or JSON. Every figure on it was counted on your Mac during that scan. Turn the card in the hero over to read its last line.</p>
+    <p class="lede">The Trace Report is a card, a Markdown file or JSON. Every figure on it was counted on your Mac during that scan. Below are its two sides; the card in the hero turns over as well.</p>
+  </div>
+  <div class="trace reveal">
+    <figure class="tc"><div class="report"><div class="face">
+      <p class="card-brand"><svg aria-hidden="true"><use href="#i-mark"/></svg>Aftertaste<span class="tag violet">Sample data</span></p>
+<p class="card-h"><b>Orbit Meet 6.2</b> left behind</p>
+<p class="card-figs"><b>214</b> files · <b>1.3</b> GB · <b>2</b> launch agents · <b>1</b> privileged helper</p>
+<p class="card-cov">Looked in 25 of 26 places. 1 protected by macOS.<br>Launch agents and helpers are listed, not removed.</p>
+<p class="card-prov"><span>macOS 26.1 · scanned 2026-10-03</span><span>measured on this Mac, nothing sent anywhere</span><span>everydayopen.github.io/aftertaste</span></p>
+    </div></div><figcaption>Front · the card, sample data</figcaption></figure>
+    <figure class="tc"><div class="report"><div class="face">
+      <p class="card-foot">This is a list of what was found in the places listed above. It is not proof that anything was erased.</p>
+<p class="card-nc"><span class="label">Not covered</span>Keychain items · Login and background item records · Launch Services and Spotlight entries · iCloud data · Other users on this Mac · Backups and snapshots · System folders under /private/var (installer receipts are listed by name)</p>
+    </div></div><figcaption>Back · how a saved report ends</figcaption></figure>
   </div>
   <div class="ledger reveal">
     <div>
