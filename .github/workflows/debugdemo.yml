@@ -31,8 +31,13 @@ jobs:
         run: |
           mkdir -p out
           build/dd/Build/Products/Debug/Aftertaste.app/Contents/MacOS/Aftertaste -demoScreen results -demoAppearance light > out/stdout.txt 2> out/stderr.txt &
-          sleep 12
+          sleep 10
+          ps -o %cpu,rss,etime,command -p $(pgrep -x Aftertaste) || true
+          sample Aftertaste 5 -file out/sample.txt || true
           screencapture -x out/full.png
+          sleep 5
+          cat out/stderr.txt
+          ps -o %cpu,rss,etime,command -p $(pgrep -x Aftertaste) || true
           cat out/stderr.txt || true
           pkill -x Aftertaste || true
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
