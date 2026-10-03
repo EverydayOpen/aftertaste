@@ -41,7 +41,6 @@ struct ActivityView: View {
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
             Spacer(minLength: Space.s)
-            if model.isDemo { Tag(text: TraceReportText.sampleWatermark, tint: .secondary) }
             Button("Reveal Log in Finder") { revealLog() }
                 .buttonStyle(.bordered)
                 .help("Show the log in Finder")

@@ -43,7 +43,6 @@ struct ReadinessView: View {
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
             Spacer(minLength: Space.s)
-            if model.isDemo { Tag(text: TraceReportText.sampleWatermark, tint: .secondary) }
             Button("Check Again") { Task { await model.loadReadiness() } }
                 .buttonStyle(.bordered)
                 .disabled(model.readiness == nil)

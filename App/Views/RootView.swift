@@ -3,11 +3,20 @@ import SwiftUI
 
 /// The window's content: one screen at a time (welcome, preview, history, Erase readiness, about) under one toolbar, a
 /// cover while the Library is read or items are put back, and every sheet, one at a time: the first-run explainer, the
-/// move (confirm, then moving, then the result, all one sheet whose content changes), the Trace Report and Preferences.
-/// Hosting them here means they show on any screen.
+/// move (confirm, then the result; the progress of the move itself is the preview's bottom bar), the Trace Report and
+/// Preferences. Hosting them here means they show on any screen.
+///
+/// The window's root is one `NavigationSplitView`, so AppKit gives its sidebar the full window height (under the title bar and
+/// the traffic lights). The sidebar holds the apps of a preview that found something; on every other screen it is collapsed
+/// and the screen is the detail.
 struct RootView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The app picked in the preview's sidebar; nil = every app.
+    @State private var focus: String?
+    /// What the user chose for the sidebar while it has anything to show.
+    @State private var columns = NavigationSplitViewVisibility.all
 
     private enum ActiveSheet: Hashable, Identifiable {
         case firstRun, move, report, preferences
@@ -15,35 +24,64 @@ struct RootView: View {
     }
 
     var body: some View {
-        screenView
-            .frame(minWidth: 760, minHeight: 560)
-            .overlay { cover }
-            .overlay(alignment: .top) { notice }
-            .animation(Motion.standard(reduceMotion), value: model.notice)
-            .toolbar { toolbar }
-            .sheet(item: sheet) { which in
-                switch which {
-                case .firstRun: FirstRunView().environmentObject(model)
-                case .move:
-                    // One sheet for the whole move, so confirm -> moving -> result swaps content instead of dismissing
-                    // one sheet and presenting another.
-                    Group {
-                        if case .result = model.phase { TrashedView() } else { ConfirmSheet() }
-                    }
-                    .environmentObject(model)
-                case .report:
-                    // The scan the user reviewed, not the rescan after a move: the card is the "before" screen.
-                    if let reviewed = model.reportScan ?? model.scan { TraceReportView(scan: reviewed).environmentObject(model) }
-                case .preferences: PreferencesSheet().environmentObject(model)
+        NavigationSplitView(columnVisibility: columnVisibility) {
+            sidebar.navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 360)
+        } detail: {
+            screenView
+        }
+        .frame(minWidth: 760, minHeight: 560)
+        .overlay { cover }
+        .overlay(alignment: .top) { notice }
+        .animation(Motion.standard(reduceMotion), value: model.notice)
+        .toolbar { toolbar }
+        .sheet(item: sheet) { which in
+            switch which {
+            case .firstRun: FirstRunView().environmentObject(model)
+            case .move:
+                // One sheet for the confirmation and the result, so the result replaces the confirmation's content. The
+                // move itself has no sheet: the window stays active and the rows leave the list behind it.
+                Group {
+                    if case .result = model.phase { TrashedView() } else { ConfirmSheet() }
                 }
+                .environmentObject(model)
+            case .report:
+                // The scan the user reviewed, not the rescan after a move: the card is the "before" screen.
+                if let reviewed = model.reportScan ?? model.scan { TraceReportView(scan: reviewed).environmentObject(model) }
+            case .preferences: PreferencesSheet().environmentObject(model)
             }
-            .task { await model.start() }
+        }
+        .task { await model.start() }
+    }
+
+    // MARK: - Sidebar and screens
+
+    /// A preview with something found; every other screen, and a quiet result, is one centred page.
+    private var showsSidebar: Bool { model.screen == .preview && model.scan?.groups.isEmpty == false }
+
+    /// Collapsed whenever the sidebar has nothing to show; otherwise the user's choice. VERIFY on a Mac that the system
+    /// sidebar button is harmless on the screens where it is collapsed (the setter ignores it there).
+    private var columnVisibility: Binding<NavigationSplitViewVisibility> {
+        Binding(get: { showsSidebar ? columns : .detailOnly }, set: { if showsSidebar { columns = $0 } })
+    }
+
+    /// A focused app that left the scan (moved, or gone after an undo rescan) falls back to every app in both panes.
+    private var liveFocus: String? {
+        guard let id = focus, model.scan?.groups.contains(where: { $0.id == id }) == true else { return nil }
+        return id
+    }
+
+    @ViewBuilder private var sidebar: some View {
+        if showsSidebar, let scan = model.scan {
+            PreviewSidebar(scan: scan, focus: Binding(get: { liveFocus }, set: { focus = $0 }))
+        } else {
+            EmptyView()
+        }
     }
 
     @ViewBuilder private var screenView: some View {
         switch model.screen {
         case .welcome: PickerView()
-        case .preview: ResultsView()
+        case .preview: ResultsView(focus: liveFocus)
         case .history: ActivityView(revealLog: { model.revealLog() })
         case .readiness: ReadinessView()
         case .about: AboutView()
@@ -52,24 +90,29 @@ struct RootView: View {
 
     // MARK: - Toolbar
 
-    /// Back on every screen but the welcome (it is disabled there). ResultsView adds its own Sample tag, Rescan, History and
-    /// Erase readiness, so the root repeats those only on the other screens; Preferences is always here.
+    /// One toolbar for every screen, always in this order: the Sample tag (demo only), Rescan (preview only), History, Erase
+    /// readiness, Preferences. Back is absent on the welcome screen, not disabled.
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            Button { model.goBack() } label: { Label("Back", systemImage: "chevron.left") }
-                .disabled(model.screen == .welcome || model.isBusy)
-                .help("Back (Command-[)")
+        if model.screen != .welcome {
+            ToolbarItem(placement: .navigation) {
+                Button { model.goBack() } label: { Label("Back", systemImage: "chevron.left") }
+                    .disabled(model.isBusy)
+                    .help("Back (Command-[)")
+            }
         }
         ToolbarItemGroup(placement: .primaryAction) {
-            if model.screen != .preview {
-                if model.isDemo { Tag(text: TraceReportText.sampleWatermark, tint: .secondary) }
-                Button { model.show(.history) } label: { Label("History", systemImage: "clock.arrow.circlepath") }
-                    .disabled(model.screen == .history)
-                    .help("History")
-                Button { model.show(.readiness) } label: { Label("Erase Readiness", systemImage: "lock.shield") }
-                    .disabled(model.screen == .readiness)
-                    .help("Erase readiness")
+            if model.isDemo { Tag(text: TraceReportText.sampleWatermark, tint: .secondary) }
+            if model.screen == .preview {
+                Button { Task { await model.rescan() } } label: { Label("Rescan", systemImage: "arrow.clockwise") }
+                    .disabled(model.isBusy)
+                    .help("Read the Library again (Command-R)")
             }
+            Button { model.show(.history) } label: { Label("History", systemImage: "clock.arrow.circlepath") }
+                .disabled(model.screen == .history)
+                .help("History")
+            Button { model.show(.readiness) } label: { Label("Erase Readiness", systemImage: "lock.shield") }
+                .disabled(model.screen == .readiness)
+                .help("Erase readiness")
             Button { model.showPreferences = true } label: { Label("Preferences", systemImage: "gearshape") }
                 .disabled(model.isBusy)
                 .help("Preferences")
@@ -108,15 +151,19 @@ struct RootView: View {
 
     // MARK: - Sheets
 
-    /// One sheet at a time, in this order: the first-run explainer (until Continue), the move (confirm, moving, result), the
-    /// report, Preferences. Esc cancels a confirmation, dismisses a result or closes a sheet; a running move and the
-    /// first-run explainer cannot be dismissed. Putting items back has no sheet: it is the cover.
+    /// One sheet at a time, in this order: the first-run explainer (until Continue), the move (confirm, then result), the
+    /// report, Preferences. Esc cancels a confirmation, dismisses a result or closes a sheet; the first-run explainer cannot
+    /// be dismissed. A running move has no sheet (its progress is the preview's bottom bar, so the window stays active and the
+    /// rows are seen leaving) and putting items back has none either: it is the cover.
     private var sheet: Binding<ActiveSheet?> {
         Binding(
             get: {
                 if !model.prefs.hasSeenFirstRun { return .firstRun }
+                #if DEBUG
+                if Demo.hidesMoveSheet { return nil }   // the hero records the rows leaving with the window active
+                #endif
                 switch model.phase {
-                case .confirming, .running, .result: return .move
+                case .confirming, .result: return .move
                 default: break
                 }
                 if model.showReport { return .report }

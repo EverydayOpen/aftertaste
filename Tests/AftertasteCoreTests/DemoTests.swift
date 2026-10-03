@@ -178,7 +178,7 @@ final class DemoTests: XCTestCase {
         XCTAssertTrue(outcome.results.allSatisfy { $0.status == .moved })
         let after = await b.scan(.orphans, .default)
         XCTAssertEqual(after.items.count, before.items.count - plan.items.count, "the list behind the sheet loses exactly what moved")
-        XCTAssertEqual(after.preselectedCount, 0, "nothing safe to lose is left ticked")
+        XCTAssertEqual(after.preselectedCount, 0, "nothing is left ticked")
     }
 
     // MARK: uninstall now

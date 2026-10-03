@@ -3,9 +3,9 @@ import Foundation
 /// Fixed strings for the preview, the confirm sheet and the result (BUILD_PLAN §8). Findings, not guarantees: "found",
 /// "moved to the Trash", "looked in N of M places".
 public enum PlanText {
-    /// The announcement of a new scan: "Found 3.4 GB in 41 items for 2 apps. Caches, settings and other items that are safe to lose
-    /// (1.2 GB) are ticked to start." It describes the scan's default (every High item, which is settings and the app itself as well
-    /// as caches), not the user's ticks (the live "Selected" figure does that). A total that is only a floor (a walk cut short, a
+    /// The announcement of a new scan: "Found 3.4 GB in 41 items for 2 apps. 1.2 GB is ticked to start: caches, settings and other
+    /// items an app rebuilds or resets." It describes the scan's default (every High item of an app that is not running), not the
+    /// user's ticks (the live "Selected" figure does that). A total that is only a floor (a walk cut short, a
     /// folder not measured) says "at least". Items another installed app uses, and the app itself, are not counted as found.
     public static func previewHeader(_ result: ScanResult) -> String {
         let left = result.leftBehind
@@ -14,8 +14,14 @@ public enum PlanText {
             items.contains { $0.sizeState != .measured } ? Format.atLeast(bytes) : Format.bytes(bytes)
         }
         var text = "Found \(sum(left.reduce(0) { $0 + $1.size }, left)) in \(Format.count(left.count, "item")) for \(Format.count(Set(left.map(\.ownerID)).count, "app"))."
-        if result.preselectedCount > 0 {
-            text += " Caches, settings and other items that are safe to lose (\(sum(result.preselectedBytes, result.items.filter { $0.tier == .high }))) are ticked to start."
+        // Only what can be ticked now: a running app's High rows are listed but cannot move, so they are not counted here.
+        let open = result.groups.filter { $0.runState == .notRunning }
+        let highItems = open.flatMap { $0.items.filter { $0.tier == .high } }
+        if !highItems.isEmpty {
+            let tickable = open.reduce(UInt64(0)) { $0 + $1.highBytes }
+            let appItself = result.kind == .app && highItems.contains { $0.ruleID == "APP" }
+            let figure = sum(tickable, highItems)
+            text += " \(figure.prefix(1).uppercased() + String(figure.dropFirst())) is ticked to start: \(appItself ? "the app itself, " : "")caches, settings and other items an app rebuilds or resets."
         } else {
             text += " Nothing is ticked to start."
         }

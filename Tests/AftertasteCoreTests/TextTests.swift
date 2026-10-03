@@ -302,17 +302,28 @@ final class WhyAndPlanTextTests: XCTestCase {
             for ii in r.groups[gi].items.indices where r.groups[gi].items[ii].tier == .medium { r.groups[gi].items[ii].size = restBytes / UInt64(rest) }
         }
         let text = PlanText.previewHeader(r)
-        XCTAssertTrue(text.hasPrefix("Found 3.4 GB in 41 items for 2 apps. Caches, settings and other items that are safe to lose (1.2 GB) are ticked to start."), text)
+        XCTAssertTrue(text.hasPrefix("Found 3.4 GB in 41 items for 2 apps. 1.2 GB is ticked to start: caches, settings and other items an app rebuilds or resets."), text)
         let none = resultWith(items: 3, groups: 1, highEach: 0)
         XCTAssertEqual(PlanText.previewHeader(none), "Found 3 MB in 3 items for 1 app. Nothing is ticked to start.")
         var partial = resultWith(items: 1, groups: 1)
         partial.groups[0].items[0].sizeState = .atLeast
-        XCTAssertEqual(PlanText.previewHeader(partial), "Found at least 600 MB in 1 item for 1 app. Caches, settings and other items that are safe to lose (at least 600 MB) are ticked to start.")
+        XCTAssertEqual(PlanText.previewHeader(partial), "Found at least 600 MB in 1 item for 1 app. At least 600 MB is ticked to start: caches, settings and other items an app rebuilds or resets.")
         // An unmeasured item makes the total a floor too, and a measured High item beside it keeps its exact figure.
         var unmeasured = resultWith(items: 2, groups: 1, highEach: 1)
         unmeasured.groups[0].items[1].sizeState = .notMeasured
         unmeasured.groups[0].items[1].size = 0
-        XCTAssertEqual(PlanText.previewHeader(unmeasured), "Found at least 600 MB in 2 items for 1 app. Caches, settings and other items that are safe to lose (600 MB) are ticked to start.")
+        XCTAssertEqual(PlanText.previewHeader(unmeasured), "Found at least 600 MB in 2 items for 1 app. 600 MB is ticked to start: caches, settings and other items an app rebuilds or resets.")
+        // A running app's High rows cannot move, so they are not counted as ticked.
+        var running = resultWith(items: 2, groups: 2)
+        running.groups[0].runState = .running
+        XCTAssertEqual(PlanText.previewHeader(running), "Found 1.2 GB in 2 items for 2 apps. 600 MB is ticked to start: caches, settings and other items an app rebuilds or resets.")
+        running.groups[1].runState = .running
+        XCTAssertEqual(PlanText.previewHeader(running), "Found 1.2 GB in 2 items for 2 apps. Nothing is ticked to start.")
+        // The app itself leads the list when it is ticked on an uninstall.
+        var uninstall = resultWith(items: 1, groups: 1)
+        uninstall.kind = .app
+        uninstall.groups[0].items.append(ResidueItem(path: "/Applications/App 0.app", ownerID: "o0", ruleID: "APP", kind: .app, tier: .high, size: 100_000_000, sizeState: .measured))
+        XCTAssertEqual(PlanText.previewHeader(uninstall), "Found 600 MB in 1 item for 1 app. 700 MB is ticked to start: the app itself, caches, settings and other items an app rebuilds or resets.")
         XCTAssertEqual(PlanText.previewHeader(ScanResult(scannedAt: T.now, kind: .orphans, groups: [], coverage: Coverage(places: [PlaceCoverage(root: .caches, state: .read)]),
                                                         home: T.home, osVersion: "26.1")), "Nothing found. Looked in the 1 place.")
     }

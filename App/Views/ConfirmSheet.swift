@@ -2,16 +2,17 @@ import AftertasteCore
 import SwiftUI
 
 /// The sheet for a move (docs/DESIGN.md §6.5): what will go to the Trash, per class, with anything that may hold the user's
-/// own data named one by one behind a required acknowledgement; then, while the run goes, how far it is; and, while Undo
-/// runs, one line saying so. One view for all three phases so the sheet stays put and only its content changes. The plan it shows is the plan that runs (`TrashPlanner`
-/// made it from what the user saw); this sheet only asks. Written, not compiled.
+/// own data named one by one behind a required acknowledgement. The plan it shows is the plan that runs (`TrashPlanner` made
+/// it from what the user saw); this sheet only asks. The run has no sheet: its progress is the preview's bottom bar
+/// (`MoveProgress`), so the window stays active and the rows are seen leaving. Written, not compiled.
 struct ConfirmSheet: View {
     @EnvironmentObject private var model: AppModel
 
     var body: some View {
         switch model.phase {
         case .confirming(let plan): ConfirmPage(plan: plan)
-        case .running(let plan, let finished): MovingPage(plan: plan, finished: finished)
+        // The sheet is on its way out as the run starts: keep the page it showed, inert, instead of collapsing to nothing.
+        case .running(let plan, _): ConfirmPage(plan: plan).disabled(true)
         case .undoing: PuttingBackPage()
         default: EmptyView()
         }
@@ -184,14 +185,12 @@ private struct ConfirmPage: View {
 
 // MARK: - Running
 
-/// "Moving to Trash": the item being checked now, a bar by items and the size still to go. The bar is by items because the
-/// count is known (a scan reports by place, a move by item); it never prints a percentage. One view for the sheet
-/// (`MovingPage`) and for the preview's bottom bar (`compact`), which keeps the window in view so the rows can be seen
-/// leaving. The only loop is the system spinner.
+/// "Moving Orbit Meet · Cache": the item being checked now and a bar by items, in the preview's bottom bar, so the window
+/// stays in view and the rows can be seen leaving. The bar is by items because the count is known (a scan reports by place, a
+/// move by item); it never prints a percentage. The only loop is the system spinner.
 struct MoveProgress: View {
     let plan: TrashPlan
     let finished: Int
-    var compact = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -199,36 +198,14 @@ struct MoveProgress: View {
         let done = min(finished, total)
         let fraction = total == 0 ? 0 : Double(done) / Double(total)
         let doing = done < total ? name(plan.items[done]) : "Reading the list again"
-        Group {
-            if compact {
-                HStack(spacing: Space.s) {
-                    ProgressView().controlSize(.small)
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(done < total ? "Moving \(doing)" : doing)
-                            .font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.tail)
-                        MoveBar(fraction: fraction)
-                    }
-                    count(done, total)
-                }
-            } else {
-                VStack(alignment: .leading, spacing: Space.m) {
-                    Text("Moving to Trash").font(.system(size: 22, weight: .semibold)).tracking(-0.3)
-                    VStack(alignment: .leading, spacing: Space.xs) {
-                        HStack(spacing: Space.xs) {
-                            ProgressView().controlSize(.small)
-                            Text(doing).font(.system(size: 13, weight: .medium)).lineLimit(1).truncationMode(.tail)
-                        }
-                        MoveBar(fraction: fraction)
-                        HStack {
-                            count(done, total)
-                            Spacer(minLength: Space.xs)
-                            Text(ResidueText.size(plan.items)).font(.system(size: 12, design: .rounded)).monospacedDigit().foregroundStyle(.secondary)
-                        }
-                    }
-                    Text("Each item is checked again just before it moves.")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
-                }
+        HStack(spacing: Space.s) {
+            ProgressView().controlSize(.small)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(done < total ? "Moving \(doing)" : doing)
+                    .font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.tail)
+                MoveBar(fraction: fraction)
             }
+            count(done, total)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Moving to Trash")
@@ -266,19 +243,6 @@ private struct MoveBar: View {
         .frame(height: 8)
         .animation(Motion.standard(reduceMotion), value: fraction)
         .accessibilityHidden(true)
-    }
-}
-
-/// The sheet form: a small card, not a modal wall. (The preview's own bar shows the same progress with the window in view.)
-private struct MovingPage: View {
-    let plan: TrashPlan
-    let finished: Int
-
-    var body: some View {
-        MoveProgress(plan: plan, finished: finished)
-            .padding(Space.xl)
-            .frame(width: 440, alignment: .leading)
-            .interactiveDismissDisabled()
     }
 }
 

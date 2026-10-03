@@ -55,7 +55,8 @@ struct AboutView: View {
                 Button("Releases") { model.openReleases() }
                 Button("Report a Problem") { model.openIssues() }
             }
-            .buttonStyle(.link)
+            .buttonStyle(.borderless)   // not .link: that style keeps the system blue, and the app has one accent
+            .foregroundStyle(Brand.duskInk)
             CopyButton(title: "Copy Diagnostics") { Task { await model.copyDiagnostics() } }
                 .help("Copies a table of which places could be read, with no file names")
             VStack(spacing: Space.xxs) {

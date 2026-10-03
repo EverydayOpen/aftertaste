@@ -4,37 +4,18 @@ import SwiftUI
 /// The Preview, the dry run (docs/DESIGN.md §6.5): the apps on the left, and on the right what was found for them, one
 /// card per app, every row with its tier, its size and the one-line reason it belongs to the app. Nothing here moves
 /// anything: the Move button hands a plan to the confirm sheet (`ConfirmSheet`). Hands off and Needs admin rows have no
-/// checkbox and say "Listed, not removed"; Review rows are moved one at a time. The window's Back and Preferences belong to
-/// `RootView`; this screen adds its own Sample tag, Rescan, History and Erase readiness (the menu has the shortcuts).
+/// checkbox and say "Listed, not removed"; Review rows are moved one at a time. This is the detail column only: the window's
+/// split view, its sidebar (`PreviewSidebar`) and its toolbar belong to `RootView`, which passes in the focused app.
 /// Written, not compiled.
 struct ResultsView: View {
     @EnvironmentObject private var model: AppModel
 
-    /// nil = every app.
-    @State private var focus: String?
+    /// The app picked in the sidebar, already checked against the scan; nil = every app.
+    let focus: String?
 
     var body: some View {
         if let scan = model.scan {
-            // A focused app that left the scan (moved, or gone after an undo rescan) falls back to every app in both panes.
-            let live = focus.flatMap { id in scan.groups.contains { $0.id == id } ? id : nil }
-            NavigationSplitView {
-                PreviewSidebar(scan: scan, focus: Binding(get: { live }, set: { focus = $0 }))
-                    .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 360)
-            } detail: {
-                PreviewDetail(scan: scan, focus: live)
-            }
-            .toolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    if model.isDemo { Tag(text: TraceReportText.sampleWatermark, tint: .secondary) }
-                    Button { Task { await model.rescan() } } label: { Label("Rescan", systemImage: "arrow.clockwise") }
-                        .disabled(model.isBusy)
-                        .help("Read the Library again (Command-R)")
-                    Button { model.show(.history) } label: { Label("History", systemImage: "clock.arrow.circlepath") }
-                        .help("History")
-                    Button { model.show(.readiness) } label: { Label("Erase Readiness", systemImage: "lock.shield") }
-                        .help("Erase readiness")
-                }
-            }
+            PreviewDetail(scan: scan, focus: focus)
         } else {
             VStack(spacing: Space.s) {
                 ProgressView()
@@ -65,18 +46,14 @@ enum ResidueText {
 
 // MARK: - Sidebar
 
-private struct PreviewSidebar: View {
+struct PreviewSidebar: View {
     let scan: ScanResult
     @Binding var focus: String?
     private static let allTag = "all-apps"
 
     var body: some View {
         List(selection: Binding<String?>(get: { focus ?? Self.allTag }, set: { focus = ($0 == nil || $0 == Self.allTag) ? nil : $0 })) {
-            if scan.groups.isEmpty {
-                Text("Nothing found").foregroundStyle(.secondary)
-            } else {
-                Label("All apps", systemImage: "square.grid.2x2").tag(Self.allTag)
-            }
+            Label("All apps", systemImage: "square.grid.2x2").tag(Self.allTag)
             ForEach(scan.groups) { group in
                 PreviewSidebarRow(group: group).tag(group.id)
             }
@@ -92,7 +69,8 @@ private struct PreviewSidebarRow: View {
             AppIconView(path: group.owner.bundlePath, size: 24)
             VStack(alignment: .leading, spacing: 3) {
                 Text(group.owner.displayName).font(.system(size: 13, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
-                Text("\(Format.count(group.items.count, "item")) · \(ResidueText.size(group.items))")
+                // The same list the header counts (not the app bundle, nothing another installed app uses), so the rows add up to it.
+                Text("\(Format.count(group.leftBehind.count, "item")) · \(ResidueText.size(group.leftBehind))")
                     .font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
                 // The word is in the chip; only High has the violet dot (Tier.tint). Compact chips so three tiers share one line;
                 // they stack only when even that does not fit.
@@ -116,7 +94,7 @@ private struct PreviewSidebarRow: View {
 
     private var label: String {
         let tiers = [Tier.high, .medium, .low].filter { group.count($0) > 0 }.map { "\(group.count($0)) \($0.displayName)" }
-        return ([group.owner.displayName, "\(Format.count(group.items.count, "item")), \(ResidueText.size(group.items))"]
+        return ([group.owner.displayName, "\(Format.count(group.leftBehind.count, "item")), \(ResidueText.size(group.leftBehind))"]
             + tiers + (group.isOrphan ? ["Not installed"] : [])).joined(separator: ", ")
     }
 }
@@ -332,9 +310,12 @@ private struct PreviewStage: View {
 
     /// "3.4 GB" as a number over a unit; "size not measured" is set small and may wrap, so the row never clips.
     private func figure(_ label: String, _ text: String, size: CGFloat = 26) -> some View {
-        let parts = text.split(separator: " ", maxSplits: 1).map(String.init)
+        // "at least 1.6 GB" keeps the big number and says "at least" in the label, so a floor is not set smaller than its neighbours.
+        let isFloor = text.hasPrefix("at least ")
+        let shown = isFloor ? String(text.dropFirst(9)) : text
+        let parts = shown.split(separator: " ", maxSplits: 1).map(String.init)
         let measured = parts.count == 2 && parts[0].first?.isNumber == true
-        return Metric(label, measured ? parts[0] : text, unit: measured ? parts[1] : nil, size: measured ? size : 15)
+        return Metric(isFloor ? "\(label) · at least" : label, measured ? parts[0] : shown, unit: measured ? parts[1] : nil, size: measured ? size : 15)
             .fixedSize(horizontal: measured, vertical: true)
     }
 
@@ -429,7 +410,7 @@ private struct PreviewNothingFound: View {
         }
         .frame(maxWidth: 520)
         .frame(maxWidth: .infinity)
-        .padding(.top, Space.xl)
+        .padding(.top, Space.xxl)
         .padding(.bottom, Space.m)
     }
 
@@ -587,11 +568,14 @@ private struct PreviewClassSection: View {
         let listedOnly = items.allSatisfy { !$0.tier.isSelectable }
         let fold = listedOnly && !showAll && items.count > Self.folded + 1
         let shown = fold ? Array(items.prefix(Self.folded)) : items
+        // An orphan scan caps these classes at Medium, so "rebuilt automatically" alone would contradict the unticked rows.
+        let unticked = group.isOrphan && [ResidueKind.cache, .state, .logs, .cookies].contains(kind) && !items.contains { $0.tier == .high }
         VStack(alignment: .leading, spacing: Space.xs) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(kind.displayName) · \(items.count)")
                     .font(.caption.weight(.semibold).smallCaps()).foregroundStyle(.secondary)
-                Text(WhyText.consequence(kind)).font(.system(size: 12)).foregroundStyle(.secondary)
+                Text(WhyText.consequence(kind) + (unticked ? " Not ticked: the app may still be installed somewhere Aftertaste cannot see." : ""))
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             ForEach(shown) { item in
@@ -644,7 +628,7 @@ private struct PreviewItemRow: View {
                     .font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
                     .lineLimit(1).truncationMode(.middle)
                 Text(why).font(.system(size: 12)).foregroundStyle(.secondary)
-                    .lineLimit(expanded ? nil : (item.tier.isSelectable ? 2 : 1))   // a listed-only row is a single line; Details has the rest
+                    .lineLimit(expanded ? nil : 2)   // two lines for every tier, so no reason stops mid-sentence; Details has the rest
                     .fixedSize(horizontal: false, vertical: true)
                 if longNote {
                     Text(Self.listedNote(item)).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
@@ -769,8 +753,8 @@ private struct PreviewMoveBar: View {
         let idle = model.phase == .idle
         HStack(spacing: Space.s) {
             if case .running(let plan, let finished) = model.phase {
-                // The move shows its progress here, in the window, with the rows leaving above it (the sheet stays small).
-                MoveProgress(plan: plan, finished: finished, compact: true)
+                // The move shows its progress here, in the window, with the rows leaving above it (it has no sheet).
+                MoveProgress(plan: plan, finished: finished)
             } else {
                 // The rarer actions share one menu so the bar fits the narrowest detail pane without truncating a label.
                 Menu("More") {
@@ -785,7 +769,7 @@ private struct PreviewMoveBar: View {
                 Spacer(minLength: Space.s)
                 Text(count == 0 ? "Nothing selected" : "\(Format.count(count, "item")) selected")
                     .font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit().lineLimit(1).fixedSize()
-                Button(PlanText.moveButton(count: count)) { model.requestMove() }
+                Button(count == 0 ? "Move to Trash" : PlanText.moveButton(count: count)) { model.requestMove() }
                     .buttonStyle(DuskButtonStyle())
                     .keyboardShortcut(.defaultAction)
                     .fixedSize()
