@@ -36,7 +36,7 @@ jobs:
           sample Aftertaste 5 -file out/sample.txt || true
           screencapture -x out/full.png
           sleep 5
-          cat out/stderr.txt
+          head -c 6000 out/stderr.txt; wc -l out/stderr.txt
           ps -o %cpu,rss,etime,command -p $(pgrep -x Aftertaste) || true
           cat out/stderr.txt || true
           pkill -x Aftertaste || true
