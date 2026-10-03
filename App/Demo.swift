@@ -79,6 +79,7 @@ enum Demo {
     @MainActor static func start(_ model: AppModel) {
         guard let demo = setup, !started else { return }
         started = true
+        trace("start screen=\(demo.screen) prefsSeen=\(model.prefs.hasSeenFirstRun)")
         if let look = argument("demoAppearance") {
             NSApplication.shared.appearance = NSAppearance(named: look == "dark" ? .darkAqua : .aqua)
         }
@@ -96,7 +97,9 @@ enum Demo {
     }
 
     @MainActor private static func run(_ screen: Screen, _ model: AppModel) async {
+        trace("run begin installed=\(model.installed?.apps.count ?? -1)")
         if model.installed == nil { await model.start() }   // RootView's .task does the same; whichever comes first
+        trace("run after start installed=\(model.installed?.apps.count ?? -1)")
         switch screen {
         case .picker, .firstRun: model.screen = .welcome
         case .readiness:
@@ -190,6 +193,9 @@ enum Demo {
 
     /// A run that reports the first `fraction` of its items as moved, evenly over `seconds`, then waits (the `running`
     /// capture). The real Trasher is never involved: this is a Backend closure in demo mode only.
+    static func trace(_ s: String) { FileHandle.standardError.write(Data(("[demo] " + s + "
+").utf8)) }
+
     private static func hang(_ plan: TrashPlan, _ progress: @Sendable (ItemOutcome) -> Void, seconds: Double, at fraction: Double) async -> TrashOutcome {
         let started = Date()
         let reported = Int((Double(plan.items.count) * fraction).rounded(.down))
