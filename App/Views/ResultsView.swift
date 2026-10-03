@@ -51,6 +51,9 @@ enum ResidueText {
     /// The order of the class groups, everywhere.
     static let classOrder: [ResidueKind] = [.app, .settings, .state, .cookies, .cache, .logs, .yourData, .shared, .launchItem, .system]
 
+    /// "Orbit Meet · Logs": the app and what kind of item it is, wherever a row would otherwise show only a bundle ID.
+    static func label(_ owner: String, _ kind: ResidueKind) -> String { "\(owner) · \(kind.displayName)" }
+
     /// "412 MB", "at least 3 GB", "size not measured": a sum is never shown as exact when a part was not.
     static func size(_ items: [ResidueItem]) -> String {
         if items.isEmpty { return Format.bytes(0) }
@@ -91,7 +94,8 @@ private struct PreviewSidebarRow: View {
                 Text(group.owner.displayName).font(.system(size: 13, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
                 Text("\(Format.count(group.items.count, "item")) · \(ResidueText.size(group.items))")
                     .font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
-                // The word is in the chip; only High has the violet dot (Tier.tint). The chips stack when they do not fit one line.
+                // The word is in the chip; only High has the violet dot (Tier.tint). Compact chips so three tiers share one line;
+                // they stack only when even that does not fit.
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 6) { chips }
                     VStack(alignment: .leading, spacing: 4) { chips }
@@ -106,7 +110,7 @@ private struct PreviewSidebarRow: View {
 
     private var chips: some View {
         ForEach([Tier.high, .medium, .low], id: \.self) { tier in
-            if group.count(tier) > 0 { Tag(text: "\(group.count(tier)) \(tier.displayName)", tint: tier.tint).fixedSize() }
+            if group.count(tier) > 0 { TierCount(tier: tier, count: group.count(tier)) }
         }
     }
 
@@ -114,6 +118,25 @@ private struct PreviewSidebarRow: View {
         let tiers = [Tier.high, .medium, .low].filter { group.count($0) > 0 }.map { "\(group.count($0)) \($0.displayName)" }
         return ([group.owner.displayName, "\(Format.count(group.items.count, "item")), \(ResidueText.size(group.items))"]
             + tiers + (group.isOrphan ? ["Not installed"] : [])).joined(separator: ", ")
+    }
+}
+
+/// A `Tag` set smaller for the sidebar: "2 High", "5 Medium", "1 Review" fit one line of the narrowest sidebar.
+private struct TierCount: View {
+    let tier: Tier
+    let count: Int
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if tier == .high { Circle().fill(tier.tint).frame(width: 5, height: 5).accessibilityHidden(true) }
+            Text("\(count) \(tier.displayName)").font(.system(size: 11, weight: .semibold)).monospacedDigit()
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(tier.tint.opacity(0.14), in: Capsule())
+        .overlay(Capsule().strokeBorder(contrast == .increased ? Color.primary.opacity(0.4) : tier.tint.opacity(0.3), lineWidth: contrast == .increased ? 1 : 0.5))
+        .fixedSize()
     }
 }
 
@@ -129,13 +152,17 @@ private struct PreviewDetail: View {
         // count on the button is exactly what the sheet will list.
         let plan = TrashPlanner.plan(from: scan, ticked: model.ticked, mode: .bulk(acknowledgedMedium: true), now: scan.scannedAt, runID: "preview")
         let groups = focus.flatMap { id in scan.groups.first { $0.id == id } }.map { [$0] } ?? scan.groups
+        let notices = Self.notices(scan)
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.l) {
-                    PreviewStage(scan: scan, plan: plan, running: runningPlan)
+                    if let run = lastMove { LastMoveStrip(run: run) }
                     if scan.groups.isEmpty {
                         PreviewNothingFound(scan: scan)
                     } else {
+                        // Running and blocked state come first, so they never need a scroll to find (DESIGN §6.5).
+                        if !notices.isEmpty { PreviewNotices(lines: notices) }
+                        PreviewStage(scan: scan, plan: plan, running: runningPlan)
                         PreviewGroups(groups: groups, departed: leaving)
                             .id(scan.scannedAt)
                     }
@@ -156,11 +183,92 @@ private struct PreviewDetail: View {
         return nil
     }
 
+    /// The move made from this scan, while some of it is still in the Trash: the list above has already lost those rows, so
+    /// this says where they went and offers Undo. Gone once the scan is replaced, the run is undone or the Trash is emptied.
+    private var lastMove: HistoryRun? {
+        guard model.phase == .idle, let outcome = model.lastOutcome, outcome.movedCount > 0,
+              let reviewed = model.reportScan, outcome.startedAt > reviewed.scannedAt,
+              let run = model.history.first(where: { $0.runID == outcome.runID }), !run.undoable.isEmpty else { return nil }
+        return run
+    }
+
+    /// Why some rows will not move, in words: a running app, or folders macOS keeps private. Empty when nothing blocks.
+    private static func notices(_ scan: ScanResult) -> [String] {
+        var lines: [String] = []
+        let running = scan.groups.filter { $0.runState == .running }.map { $0.owner.displayName }
+        if running.count == 1 {
+            lines.append("\(running[0]) is running. Quit it to move its items, then Rescan.")
+        } else if running.count > 1 {
+            lines.append("\(Format.count(running.count, "app")) are running: \(running.joined(separator: ", ")). Quit them to move their items, then Rescan.")
+        }
+        if scan.groups.contains(where: { $0.runState == .unknown }) { lines.append(WhyText.reason(.runningUnknown)) }
+        let protected = scan.items.filter { $0.blocked == .protectedByMacOS }.count
+        if protected > 0 {
+            lines.append("\(Format.count(protected, "item")) \(protected == 1 ? "is" : "are") protected by macOS and listed, not removed. Reveal in Finder to look inside.")
+        }
+        return lines
+    }
+
     /// A row leaves when its outcome has been reported as moved (MOTION §3.2), never on a fake schedule; a row that was
     /// left alone stays, and the result sheet says why.
     private var leaving: Set<String> {
         guard let running = runningPlan else { return [] }
         return departed(running.plan, finished: running.finished, moved: { model.movedSoFar.contains($0) })
+    }
+}
+
+// MARK: - Notices: the last move, and what will not move
+
+/// The rows of the move that was just made left the list above, so this says where they went and offers Undo.
+private struct LastMoveStrip: View {
+    let run: HistoryRun
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        let items = run.undoable
+        let size = Format.size(items.reduce(UInt64(0)) { $0 + $1.bytes }, atLeast: items.contains { $0.lowerBound })
+        HStack(spacing: Space.s) {
+            Image(systemName: "trash").font(.system(size: 11, weight: .medium)).foregroundStyle(Brand.duskInk)
+                .well(Brand.dusk, size: 24).accessibilityHidden(true)
+            Text("\(Format.count(items.count, "item")) (\(size)) moved to the Trash from this scan.")
+                .font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: Space.xs)
+            Button("Undo") { Task { await model.undo(run: run.runID) } }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(model.isBusy)
+                .help("Put these items back where they were")
+            Button("Open History") { model.show(.history) }
+                .buttonStyle(.borderless)
+                .font(.system(size: 12))
+        }
+        .padding(.horizontal, Space.s)
+        .padding(.vertical, Space.xs)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .surface(Radius.plate)
+    }
+}
+
+/// Running apps and folders macOS keeps private, at the top of the preview: neutral, never red, and nothing to scroll for.
+private struct PreviewNotices: View {
+    let lines: [String]
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Space.s) {
+            Image(systemName: "hand.raised").font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
+                .well(Color.secondary, size: 28).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Some items will stay where they are").font(.system(size: 13, weight: .semibold))
+                ForEach(lines, id: \.self) {
+                    Text($0).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(Space.s)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .surface(Radius.plate)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -170,7 +278,6 @@ private struct PreviewStage: View {
     let scan: ScanResult
     let plan: TrashPlan
     let running: (plan: TrashPlan, finished: Int)?
-    @EnvironmentObject private var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let orphanHeader = "These belong to apps I can't find. I may be wrong if the app lives on a drive that is not connected."
@@ -189,21 +296,23 @@ private struct PreviewStage: View {
     var body: some View {
         // While a run is going, Selected counts down to what is still to be reported (MOTION §3.2).
         let selectedItems = running.map { Array($0.plan.items.dropFirst($0.finished)) } ?? plan.items
-        let found = scan.items
+        // One source for Found, Items and the sentence under them: what the scan says was left behind (`PlanText.previewHeader`
+        // counts the same list). Rows that are listed but not counted are said, so the sidebar's per-app counts still add up.
+        let left = scan.leftBehind
+        let uncounted = scan.itemCount - left.count
         VStack(alignment: .leading, spacing: Space.s) {
-            if !scan.groups.isEmpty {
-                HStack(alignment: .top, spacing: Space.xl) {
-                    figure("Found", ResidueText.size(found), size: 40)
-                    figure("Items", String(scan.itemCount))
-                    figure("Selected", ResidueText.size(selectedItems))
-                    Spacer(minLength: 0)
-                }
-                .animation(Motion.standard(reduceMotion), value: selectedItems.count)
-                .accessibilityHidden(true)
+            HStack(alignment: .top, spacing: Space.xl) {
+                figure("Found", ResidueText.size(left), size: 40)
+                figure("Items", String(left.count))
+                figure("Selected", ResidueText.size(selectedItems))
+                Spacer(minLength: 0)
             }
-            if scan.kind == .orphans, !scan.groups.isEmpty {
+            .animation(Motion.standard(reduceMotion), value: selectedItems.count)
+            .accessibilityHidden(true)
+            if scan.kind == .orphans {
                 Text(Self.orphanHeader).font(.system(size: 15)).fixedSize(horizontal: false, vertical: true)
                 Text(PlanText.previewHeader(scan)).font(.system(size: 13)).foregroundStyle(.secondary)
+                if uncounted > 0 { uncountedNote(uncounted) }
                 DisclosureGroup("Why might this be wrong?") {
                     VStack(alignment: .leading, spacing: Space.xs) {
                         ForEach(Self.orphanDoubts, id: \.self) { Text($0).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
@@ -213,10 +322,11 @@ private struct PreviewStage: View {
                     .surface(16)
                 }
                 .font(.system(size: 13))
-            } else if !scan.groups.isEmpty {
+            } else {
                 Text(PlanText.previewHeader(scan)).font(.system(size: 15)).fixedSize(horizontal: false, vertical: true)
+                if uncounted > 0 { uncountedNote(uncounted) }
             }
-            coverage
+            PreviewCoverage(scan: scan)
         }
     }
 
@@ -228,9 +338,20 @@ private struct PreviewStage: View {
             .fixedSize(horizontal: measured, vertical: true)
     }
 
-    private var coverage: some View {
+    private func uncountedNote(_ n: Int) -> some View {
+        Text("\(n) more \(n == 1 ? "item is" : "items are") listed below but not counted here: \(n == 1 ? "it is" : "they are") the app itself, or something an installed app also uses.")
+            .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// "Looked in 25 of 26 places. 1 protected by macOS." and, behind a disclosure, the places that were not read in full.
+private struct PreviewCoverage: View {
+    let scan: ScanResult
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
         let unread = scan.coverage.places.filter { $0.state != .read && $0.state != .absent }
-        return VStack(alignment: .leading, spacing: Space.xs) {
+        VStack(alignment: .leading, spacing: Space.xs) {
             Text(PlanText.coverageLine(scan.coverage)).font(.system(size: 13)).foregroundStyle(.secondary)
             if !unread.isEmpty {
                 DisclosureGroup("Places I could not read") {
@@ -275,22 +396,70 @@ private struct PreviewStage: View {
     }
 }
 
+/// The quiet state: an empty outline, one calm sentence, and what was looked at, so a short page still reads as an answer.
+/// The check shows only when every place was read (BUILD_PLAN §3 S20); a partial scan keeps the weaker sentence and says why.
 private struct PreviewNothingFound: View {
     let scan: ScanResult
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        VStack(spacing: Space.s) {
-            if scan.isCleanAndComplete {
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 36)).foregroundStyle(.green).bounce(on: scan.scannedAt, reduceMotion: reduceMotion)
-                    .accessibilityHidden(true)
+        let complete = scan.isCleanAndComplete
+        VStack(spacing: Space.l) {
+            VStack(spacing: Space.s) {
+                ZStack {
+                    DashedOutline(radius: 26, lineWidth: 2, opacity: 0.45)
+                    Image(systemName: complete ? "checkmark.circle.fill" : "magnifyingglass")
+                        .font(.system(size: 34))
+                        .foregroundStyle(complete ? Color.green : Color.secondary)
+                        .bounce(on: scan.scannedAt, reduceMotion: reduceMotion)
+                }
+                .frame(width: 96, height: 96)
+                .accessibilityHidden(true)
+                Text(PlanText.emptyState(scan)).font(.system(size: 17, weight: .semibold))
+                if complete {
+                    Text(scan.kind == .orphans ? "Nothing here belongs to an app that is no longer installed."
+                                               : "Nothing in your Library is named for this app.")
+                        .font(.system(size: 13)).foregroundStyle(.secondary)
+                }
             }
-            // The stage above already prints the coverage line.
-            Text(PlanText.emptyState(scan)).font(.system(size: 15, weight: .semibold))
+            .multilineTextAlignment(.center)
+            .accessibilityElement(children: .combine)
+            checked
+            if !complete { PreviewCoverage(scan: scan) }
         }
-        .multilineTextAlignment(.center)
+        .frame(maxWidth: 520)
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Space.xxl)
+        .padding(.top, Space.xl)
+        .padding(.bottom, Space.m)
+    }
+
+    /// What Aftertaste looked at. Names of places, a count of installed apps, and what it did not read.
+    private var checked: some View {
+        let names = scan.coverage.places.map { $0.root.displayName }
+        let shown = names.prefix(4).joined(separator: ", ")
+        return VStack(alignment: .leading, spacing: Space.s) {
+            Text("What was checked").font(.caption.weight(.semibold).smallCaps()).foregroundStyle(.secondary)
+            row("folder", "Places in your Library",
+                names.count > 4 ? "\(shown) and \(names.count - 4) more." : (shown.isEmpty ? "None listed." : shown + "."))
+            if scan.installedCount > 0 {
+                row("app.badge.checkmark", Format.count(scan.installedCount, "installed app"), "Each name in those places was compared with them.")
+            }
+            row("list.bullet.rectangle", "Names and sizes only", "No file contents were read, apart from the small property lists that say who an app is.")
+        }
+        .padding(Space.m)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .surface(16)
+    }
+
+    private func row(_ symbol: String, _ title: String, _ detail: String) -> some View {
+        HStack(alignment: .top, spacing: Space.s) {
+            Image(systemName: symbol).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                .well(Color.secondary, size: 24).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.system(size: 13, weight: .semibold))
+                Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
         .accessibilityElement(children: .combine)
     }
 }
@@ -357,20 +526,7 @@ private struct PreviewGroupCard: View {
                 ResidueBar(segments: segments)
             }
             VStack(alignment: .leading, spacing: Space.m) {
-                ForEach(sections) { section in
-                    VStack(alignment: .leading, spacing: Space.xs) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("\(section.kind.displayName) · \(section.items.count)")
-                                .font(.caption.weight(.semibold).smallCaps()).foregroundStyle(.secondary)
-                            Text(WhyText.consequence(section.kind)).font(.system(size: 12)).foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        ForEach(section.items) { item in
-                            PreviewItemRow(item: item, group: group)
-                                .transition(.outline(reduceMotion, index: group.items.firstIndex(where: { $0.id == item.id }) ?? 0))
-                        }
-                    }
-                }
+                ForEach(sections) { PreviewClassSection(kind: $0.kind, items: $0.items, group: group) }
             }
             .animation(Motion.spring(reduceMotion), value: departed)
         }
@@ -415,6 +571,43 @@ private struct PreviewGroupCard: View {
     }
 }
 
+/// One class of one app (Cache, Logs, System ...): its header, its consequence line and its rows. A class that is only
+/// listed (Hands off, Needs admin) folds after two rows, so a long list of read-only items never pushes the rest of the card
+/// out of view; "Show more" opens it.
+private struct PreviewClassSection: View {
+    let kind: ResidueKind
+    let items: [ResidueItem]
+    let group: ResidueGroup
+    @State private var showAll = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let folded = 2
+
+    var body: some View {
+        let listedOnly = items.allSatisfy { !$0.tier.isSelectable }
+        let fold = listedOnly && !showAll && items.count > Self.folded + 1
+        let shown = fold ? Array(items.prefix(Self.folded)) : items
+        VStack(alignment: .leading, spacing: Space.xs) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(kind.displayName) · \(items.count)")
+                    .font(.caption.weight(.semibold).smallCaps()).foregroundStyle(.secondary)
+                Text(WhyText.consequence(kind)).font(.system(size: 12)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            ForEach(shown) { item in
+                PreviewItemRow(item: item, group: group)
+                    .transition(.outline(reduceMotion, index: group.items.firstIndex(where: { $0.id == item.id }) ?? 0))
+            }
+            if fold {
+                let rest = items.count - Self.folded
+                Button("Show \(rest) More \(rest == 1 ? "Item" : "Items")") { withAnimation(Motion.standard(reduceMotion)) { showAll = true } }
+                    .buttonStyle(.borderless)
+                    .font(.system(size: 12))
+            }
+        }
+    }
+}
+
 // MARK: - One row
 
 private struct PreviewItemRow: View {
@@ -451,9 +644,9 @@ private struct PreviewItemRow: View {
                     .font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
                     .lineLimit(1).truncationMode(.middle)
                 Text(why).font(.system(size: 12)).foregroundStyle(.secondary)
-                    .lineLimit(expanded ? nil : 2)
+                    .lineLimit(expanded ? nil : (item.tier.isSelectable ? 2 : 1))   // a listed-only row is a single line; Details has the rest
                     .fixedSize(horizontal: false, vertical: true)
-                if !item.tier.isSelectable {
+                if longNote {
                     Text(Self.listedNote(item)).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -479,6 +672,8 @@ private struct PreviewItemRow: View {
                             .controlSize(.small)
                             .disabled(blockedByRun || model.phase != .idle)
                             .help("Review rows are moved one at a time, each with its own confirmation")
+                    } else if !item.tier.isSelectable && !longNote {
+                        Text(Self.listedNote(item)).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
                     }
                 }
                 .font(.system(size: 12))
@@ -528,6 +723,9 @@ private struct PreviewItemRow: View {
         .terminal()
     }
 
+    /// The long note (the app bundle itself) is a line of its own; the short one sits at the end of the action row.
+    private var longNote: Bool { item.tier == .needsAdmin && item.kind == .app }
+
     /// Hands off and Needs admin rows are shown and explained, never removed (v1 has no helper and no administrator rights).
     private static func listedNote(_ item: ResidueItem) -> String {
         item.tier == .needsAdmin && item.kind == .app
@@ -570,24 +768,29 @@ private struct PreviewMoveBar: View {
     var body: some View {
         let idle = model.phase == .idle
         HStack(spacing: Space.s) {
-            // The rarer actions share one menu so the bar fits the narrowest detail pane without truncating a label.
-            Menu("More") {
-                Button("Select All High") { model.selectHigh() }
-                Button("Export Report") { model.showReport = true }
-                Button("Close Scan") { model.closeScan() }
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .disabled(!idle)
-            .help("Select every High item, export the report, or close this scan")
-            Spacer(minLength: Space.s)
-            Text(count == 0 ? "Nothing selected" : "\(Format.count(count, "item")) selected")
-                .font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit().lineLimit(1).fixedSize()
-            Button(PlanText.moveButton(count: count)) { model.requestMove() }
-                .buttonStyle(DuskButtonStyle())
-                .keyboardShortcut(.defaultAction)
+            if case .running(let plan, let finished) = model.phase {
+                // The move shows its progress here, in the window, with the rows leaving above it (the sheet stays small).
+                MoveProgress(plan: plan, finished: finished, compact: true)
+            } else {
+                // The rarer actions share one menu so the bar fits the narrowest detail pane without truncating a label.
+                Menu("More") {
+                    Button("Select All High") { model.selectHigh() }
+                    Button("Export Report") { model.showReport = true }
+                    Button("Close Scan") { model.closeScan() }
+                }
+                .menuStyle(.borderlessButton)
                 .fixedSize()
-                .disabled(count == 0 || !idle)
+                .disabled(!idle)
+                .help("Select every High item, export the report, or close this scan")
+                Spacer(minLength: Space.s)
+                Text(count == 0 ? "Nothing selected" : "\(Format.count(count, "item")) selected")
+                    .font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit().lineLimit(1).fixedSize()
+                Button(PlanText.moveButton(count: count)) { model.requestMove() }
+                    .buttonStyle(DuskButtonStyle())
+                    .keyboardShortcut(.defaultAction)
+                    .fixedSize()
+                    .disabled(count == 0 || !idle)
+            }
         }
         .padding(.vertical, Space.xs)
         .padding(.horizontal, Space.m)

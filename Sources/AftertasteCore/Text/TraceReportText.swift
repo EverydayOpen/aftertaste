@@ -78,7 +78,8 @@ public enum TraceReportText {
                                  unmeasuredCount: left.filter { $0.sizeState == .notMeasured }.count,
                                  launchAgents: left.filter { item in item.root.map { agents.contains($0) } ?? false }.count,
                                  launchDaemons: left.filter { $0.root == .systemLaunchDaemons }.count,
-                                 privilegedHelpers: left.filter { $0.root == .systemPrivilegedHelperTools }.count, rows: rows))
+                                 privilegedHelpers: left.filter { $0.root == .systemPrivilegedHelperTools }.count,
+                                 itemCount: left.count, rows: rows))
         }
         let c = result.coverage
         let unreadable = c.places.filter { $0.state != .read && $0.state != .absent }.map(\.root.displayName)
@@ -106,17 +107,44 @@ public enum TraceReportText {
     /// "Orbit Meet 6.2 left behind"
     public static func headline(_ c: ShareCard) -> String { "\(c.subject) left behind" }
 
+    /// One figure of the card, in the order the card says them. `listed` marks the counts of things that are listed, not removed.
+    private static func segments(_ c: ShareCard) -> [(text: String, listed: Bool)] {
+        var out: [(text: String, listed: Bool)] = []
+        func add(_ text: String, listed: Bool = false) { out.append((text: text, listed: listed)) }
+        if c.files > 0 { add((c.lowerBound ? "at least " : "") + Format.count(c.files, "file")) }
+        if c.bytes > 0 { add(c.lowerBound ? Format.atLeast(c.bytes) : Format.bytes(c.bytes)) }
+        if c.launchAgents > 0 { add(Format.count(c.launchAgents, "launch agent"), listed: true) }
+        if c.launchDaemons > 0 { add(Format.count(c.launchDaemons, "launch daemon"), listed: true) }
+        if c.privilegedHelpers > 0 { add(Format.count(c.privilegedHelpers, "privileged helper"), listed: true) }
+        if c.unmeasuredCount > 0 { add(Format.count(c.unmeasuredCount, "item") + " not measured") }
+        return out
+    }
+
+    private static func nothingFound(_ c: ShareCard) -> String { c.coverage.recentlyRemoved > 0 ? "Nothing found yet" : "Nothing found" }
+
     /// "214 files · 1.3 GB · 2 launch agents · 1 launch daemon · 1 privileged helper": lines with a zero count are omitted. A total that is only a
     /// floor reads "at least 214 files · at least 1.3 GB · 2 items not measured".
     public static func figures(_ c: ShareCard) -> String {
-        var parts: [String] = []
-        if c.files > 0 { parts.append((c.lowerBound ? "at least " : "") + Format.count(c.files, "file")) }
-        if c.bytes > 0 { parts.append(c.lowerBound ? Format.atLeast(c.bytes) : Format.bytes(c.bytes)) }
-        if c.launchAgents > 0 { parts.append(Format.count(c.launchAgents, "launch agent")) }
-        if c.launchDaemons > 0 { parts.append(Format.count(c.launchDaemons, "launch daemon")) }
-        if c.privilegedHelpers > 0 { parts.append(Format.count(c.privilegedHelpers, "privileged helper")) }
-        if c.unmeasuredCount > 0 { parts.append(Format.count(c.unmeasuredCount, "item") + " not measured") }
-        return parts.isEmpty ? (c.coverage.recentlyRemoved > 0 ? "Nothing found yet" : "Nothing found") : parts.joined(separator: " · ")
+        let all = segments(c)
+        return all.isEmpty ? nothingFound(c) : all.map(\.text).joined(separator: " · ")
+    }
+
+    /// The same figures as the card sets them: what was measured ("214 files · 1.3 GB"), then, on a line of its own, what is only listed
+    /// ("2 launch agents · 1 privileged helper"). A figure is never split, so a count never loses its noun to the next line.
+    public static func figureGroups(_ c: ShareCard) -> [[String]] {
+        let all = segments(c)
+        if all.isEmpty { return [[nothingFound(c)]] }
+        return [all.filter { !$0.listed }.map(\.text), all.filter(\.listed).map(\.text)].filter { !$0.isEmpty }
+    }
+
+    /// "2 privileged helpers" with no break opportunity inside (no-break spaces), for a view that wraps.
+    public static func noBreak(_ s: String) -> String { s.replacingOccurrences(of: " ", with: "\u{00A0}") }
+
+    /// Joins the last `lastWords` words of `s` with no-break spaces, so a headline never leaves "behind" alone on a line.
+    public static func keepTogether(_ s: String, lastWords: Int = 2) -> String {
+        let words = s.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
+        guard lastWords >= 2, words.count > lastWords else { return s }
+        return words.dropLast(lastWords).joined(separator: " ") + " " + words.suffix(lastWords).joined(separator: "\u{00A0}")
     }
 
     /// "Looked in 16 of 17 places. 1 protected by macOS." Worded by `PlanText.coverageLine`, like the app and the file.

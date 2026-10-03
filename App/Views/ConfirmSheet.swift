@@ -184,33 +184,101 @@ private struct ConfirmPage: View {
 
 // MARK: - Running
 
-/// "Moving… 6 of 14". The rows leave the list behind the sheet as outcomes arrive. The only loop is the system spinner.
-private struct MovingPage: View {
+/// "Moving to Trash": the item being checked now, a bar by items and the size still to go. The bar is by items because the
+/// count is known (a scan reports by place, a move by item); it never prints a percentage. One view for the sheet
+/// (`MovingPage`) and for the preview's bottom bar (`compact`), which keeps the window in view so the rows can be seen
+/// leaving. The only loop is the system spinner.
+struct MoveProgress: View {
     let plan: TrashPlan
     let finished: Int
+    var compact = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let total = plan.items.count
         let done = min(finished, total)
-        VStack(alignment: .leading, spacing: Space.m) {
-            Text("Moving to Trash").font(.system(size: 22, weight: .semibold)).tracking(-0.3)
-            HStack(spacing: Space.s) {
-                ProgressView().controlSize(.small)
-                Text("Moving… \(done) of \(total)")
-                    .font(.system(.body, design: .rounded)).monospacedDigit()
-                    .contentTransition(.numericText())
-                    .animation(Motion.standard(reduceMotion), value: done)
+        let fraction = total == 0 ? 0 : Double(done) / Double(total)
+        let doing = done < total ? name(plan.items[done]) : "Reading the list again"
+        Group {
+            if compact {
+                HStack(spacing: Space.s) {
+                    ProgressView().controlSize(.small)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(done < total ? "Moving \(doing)" : doing)
+                            .font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.tail)
+                        MoveBar(fraction: fraction)
+                    }
+                    count(done, total)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: Space.m) {
+                    Text("Moving to Trash").font(.system(size: 22, weight: .semibold)).tracking(-0.3)
+                    VStack(alignment: .leading, spacing: Space.xs) {
+                        HStack(spacing: Space.xs) {
+                            ProgressView().controlSize(.small)
+                            Text(doing).font(.system(size: 13, weight: .medium)).lineLimit(1).truncationMode(.tail)
+                        }
+                        MoveBar(fraction: fraction)
+                        HStack {
+                            count(done, total)
+                            Spacer(minLength: Space.xs)
+                            Text(ResidueText.size(plan.items)).font(.system(size: 12, design: .rounded)).monospacedDigit().foregroundStyle(.secondary)
+                        }
+                    }
+                    Text("Each item is checked again just before it moves.")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
             }
-            Text("Each item is checked again just before it moves.")
-                .font(.system(size: 12)).foregroundStyle(.secondary)
         }
-        .padding(Space.xl)
-        .frame(width: 440, alignment: .leading)
-        .interactiveDismissDisabled()
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Moving to Trash")
-        .accessibilityValue("\(done) of \(total)")
+        .accessibilityValue("\(done) of \(total), \(doing)")
+    }
+
+    private func count(_ done: Int, _ total: Int) -> some View {
+        Text("\(done) of \(Format.count(total, "item"))")
+            .font(.system(size: 12, design: .rounded)).monospacedDigit().foregroundStyle(.secondary).fixedSize()
+            .contentTransition(.numericText())
+            .animation(Motion.standard(reduceMotion), value: done)
+    }
+
+    /// "Orbit Meet · Cache": the app and the kind, not the bundle ID.
+    private func name(_ item: ResidueItem) -> String {
+        ResidueText.label(plan.owners.first { $0.bundleID == item.ownerID }?.displayName ?? item.ownerID, item.kind)
+    }
+}
+
+/// A capsule filled in proportion to `fraction`: pure shapes, so nothing animates unless the number changes.
+private struct MoveBar: View {
+    let fraction: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        let increased = contrast == .increased
+        GeometryReader { g in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.primary.opacity(0.08))
+                Capsule().fill(increased ? Color.primary : Brand.dusk).frame(width: g.size.width * min(max(fraction, 0), 1))
+            }
+            .overlay(Capsule().strokeBorder(Color.primary.opacity(increased ? 0.6 : 0.1), lineWidth: increased ? 1 : 0.5))
+        }
+        .frame(height: 8)
+        .animation(Motion.standard(reduceMotion), value: fraction)
+        .accessibilityHidden(true)
+    }
+}
+
+/// The sheet form: a small card, not a modal wall. (The preview's own bar shows the same progress with the window in view.)
+private struct MovingPage: View {
+    let plan: TrashPlan
+    let finished: Int
+
+    var body: some View {
+        MoveProgress(plan: plan, finished: finished)
+            .padding(Space.xl)
+            .frame(width: 440, alignment: .leading)
+            .interactiveDismissDisabled()
     }
 }
 

@@ -2,9 +2,10 @@ import AftertasteCore
 import SwiftUI
 
 /// What a move did (docs/DESIGN.md §6.5), as a sheet over the afterglow: the headline in the fixed words of
-/// `PlanText.resultLine`, what moved, what was left alone and why (grouped, in plain words, with what to do), and Undo.
-/// It reads the outcome from `AppModel.phase`. It says what happened and never what it means: no "clean", no "gone for
-/// good". The Trace Report card is dealt onto it once (MOTION §3.3). Written, not compiled.
+/// `PlanText.resultLine` beside the Trace Report card, a tally that adds up to what was selected, what moved and what was left
+/// alone and why (each row named by app and kind, not by bundle ID), and Undo. It reads the outcome from `AppModel.phase`. It
+/// says what happened and never what it means: no "clean", no "gone for good". The card is dealt once (MOTION §3.3).
+/// Written, not compiled.
 struct TrashedView: View {
     @EnvironmentObject private var model: AppModel
 
@@ -34,23 +35,32 @@ private struct ResultPage: View {
 
     /// Worst first: what failed, then what macOS or a lock stopped, then what changed, then the rest.
     private static let order: [TrashStatus] = [.failed, .protectedByMacOS, .locked, .dataless, .changedSinceScan, .blocked, .notAttempted, .alreadyGone]
-    private static let movedShown = 8
-    private static let rowsShown = 6
+    private static let movedShown = 6
+    private static let rowsShown = 4
+    /// The headline, the card and the bar are fixed; only the rows scroll, and only past this height. The whole sheet then stays
+    /// near 500pt, which clears the title bar of the smallest window (760 x 560).
+    private static let detailsMax: CGFloat = 260
+    private static let cardWidth: CGFloat = 232
 
-    /// Sized to its content, as the confirm sheet is: the page and the bar when they fit, else the page scrolls.
     var body: some View {
-        ViewThatFits(in: .vertical) {
-            VStack(spacing: 0) {
-                page
-                bar
-            }
-            VStack(spacing: 0) {
-                ScrollView { page }
-                bar
-            }
+        let groups = Self.order.compactMap { status -> StatusGroup? in
+            let rows = outcome.results.filter { $0.status == status }
+            return rows.isEmpty ? nil : StatusGroup(status: status, rows: rows)
         }
-        .frame(width: 620)
-        .frame(maxHeight: 760)
+        let hasDetails = !outcome.moved.isEmpty || !groups.isEmpty || !outcome.skipped.isEmpty
+        VStack(spacing: 0) {
+            hero
+            if hasDetails {
+                // Sized to its rows: they sit directly when they fit, else they scroll inside a capped area.
+                ViewThatFits(in: .vertical) {
+                    details(groups)
+                    ScrollView { details(groups) }
+                }
+                .frame(maxHeight: Self.detailsMax)
+            }
+            bar
+        }
+        .frame(width: 660)
         .background(Dawn())
         .task {
             if reduceMotion {
@@ -62,50 +72,95 @@ private struct ResultPage: View {
         }
     }
 
-    // MARK: Page
+    // MARK: Hero
 
-    private var page: some View {
+    /// The headline and the tally on the left, the card on the right, so the card is shown whole and not under a scroll.
+    private var hero: some View {
         let (headline, rest) = Self.split(PlanText.resultLine(outcome))
-        let moved = outcome.moved
-        let groups = Self.order.compactMap { status -> StatusGroup? in
-            let rows = outcome.results.filter { $0.status == status }
-            return rows.isEmpty ? nil : StatusGroup(status: status, rows: rows)
-        }
-        return VStack(alignment: .leading, spacing: Space.m) {
-            VStack(alignment: .leading, spacing: Space.xxs) {
-                HStack(alignment: .firstTextBaseline) {
+        return HStack(alignment: .top, spacing: Space.m) {
+            VStack(alignment: .leading, spacing: Space.xs) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     Text(headline)
                         .font(.system(size: 22, weight: .semibold, design: .rounded)).monospacedDigit().tracking(-0.3)
                         .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: Space.s)
-                    if model.isDemo { Tag(text: TraceReportText.sampleWatermark, tint: .secondary) }
+                    if !rest.isEmpty {
+                        Text(rest).font(.system(size: 13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                if !rest.isEmpty {
-                    Text(rest).font(.system(size: 13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+                if let tally {
+                    Text(tally).font(.system(size: 12, weight: .medium)).monospacedDigit().foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                if model.isDemo { Tag(text: TraceReportText.sampleWatermark, tint: .secondary) }
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isHeader)
-            if !moved.isEmpty { movedBox(moved) }
-            ForEach(groups) { leftAlone($0) }
-            if !outcome.skipped.isEmpty { skippedLines }
+            .frame(maxWidth: .infinity, alignment: .leading)
             if let card = model.shareCard(hideNames: model.hideNamesDefault) { cardPreview(card) }
         }
         .padding(.horizontal, Space.xl)
-        .padding(.top, Space.xl)
+        .padding(.top, Space.l)
+        .padding(.bottom, Space.s)
+    }
+
+    /// "Of 6 items selected: 4 moved, 2 not moved." The same numbers the list showed before the move, so none of them disagree.
+    private var tally: String? {
+        let gone = outcome.results.filter { $0.status == .alreadyGone }.count
+        var parts = ["\(outcome.movedCount) moved"]
+        if outcome.notMovedCount > 0 { parts.append("\(outcome.notMovedCount) not moved") }
+        if gone > 0 { parts.append("\(gone) already gone") }
+        if !outcome.skipped.isEmpty { parts.append("\(outcome.skipped.count) left out before the move") }
+        guard parts.count > 1 else { return nil }
+        return "Of \(Format.count(outcome.results.count + outcome.skipped.count, "item")) selected: " + parts.joined(separator: ", ") + "."
+    }
+
+    /// The card of what was found before the move (the model keeps that scan for the report), turning over once, then
+    /// tilting a few degrees under the pointer. Decoration stays outside `TraceCardView`, so the saved PNG never has it.
+    private func cardPreview(_ card: ShareCard) -> some View {
+        TraceCardView(card: card, width: Self.cardWidth)
+            .modifier(FlipFaces(angle: dealt ? 0 : 180, back: CardBack()))
+            .modifier(HoverTilt(max: 4, glare: true))
+            .lifted()
+            .frame(width: Self.cardWidth)
+    }
+
+    // MARK: Rows
+
+    /// Owner names from the scan the user reviewed (the rescan after a move may not have the app any more).
+    private var ownerNames: [String: String] {
+        var names: [String: String] = [:]
+        for group in (model.reportScan ?? model.scan)?.groups ?? [] { names[group.id] = group.owner.displayName }
+        return names
+    }
+
+    private func label(_ item: ResidueItem) -> String {
+        ResidueText.label(ownerNames[item.ownerID] ?? item.ownerID, item.kind)
+    }
+
+    private func details(_ groups: [StatusGroup]) -> some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            if !outcome.moved.isEmpty { movedBox(outcome.moved) }
+            ForEach(groups) { leftAlone($0) }
+            if !outcome.skipped.isEmpty { skippedLines }
+        }
+        .padding(.horizontal, Space.xl)
+        .padding(.vertical, Space.xs)   // room for the surfaces' shadows inside the scroll
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func movedBox(_ moved: [ItemOutcome]) -> some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
+        VStack(alignment: .leading, spacing: 6) {
             ForEach(moved.prefix(Self.movedShown)) { row in
-                HStack(spacing: Space.s) {
+                HStack(spacing: Space.xs) {
                     Image(systemName: TrashStatus.moved.symbol).foregroundStyle(TrashStatus.moved.tint).accessibilityHidden(true)
-                    Text(row.item.name).font(.system(size: 13, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
+                    Text(label(row.item)).font(.system(size: 13, weight: .semibold)).lineLimit(1).layoutPriority(1)
+                    Text(row.item.name).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
+                        .lineLimit(1).truncationMode(.middle)
                     Spacer(minLength: Space.xs)
                     Text(Format.size(row.item.size, row.item.sizeState))
-                        .font(.system(size: 12, design: .rounded)).monospacedDigit().foregroundStyle(.secondary)
+                        .font(.system(size: 12, design: .rounded)).monospacedDigit().foregroundStyle(.secondary).fixedSize()
                 }
+                .help(PathText.tilde(row.item.path, home: model.homePath))
                 .accessibilityElement(children: .combine)
             }
             if moved.count > Self.movedShown {
@@ -113,14 +168,14 @@ private struct ResultPage: View {
                     .font(.system(size: 12)).foregroundStyle(.secondary)
             }
         }
-        .padding(Space.m)
+        .padding(Space.s)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .surface(16)
+        .surface(Radius.plate)
     }
 
     /// One block per reason an item stayed: the word, what to do, then the items. Failed is the only red, and only its symbol.
     private func leftAlone(_ group: StatusGroup) -> some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
+        VStack(alignment: .leading, spacing: Space.xxs) {
             HStack(spacing: Space.xs) {
                 Image(systemName: group.status.symbol).foregroundStyle(group.status.tint).accessibilityHidden(true)
                 Text("\(group.status.word) · \(group.rows.count)").font(.system(size: 13, weight: .semibold))
@@ -129,7 +184,9 @@ private struct ResultPage: View {
             ForEach(group.rows.prefix(Self.rowsShown)) { row in
                 HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(row.item.name).font(.system(.caption, design: .monospaced)).fixedSize(horizontal: false, vertical: true)
+                        Text(label(row.item)).font(.system(size: 12, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
+                        Text(row.item.name).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
+                            .lineLimit(1).truncationMode(.middle)
                         if let detail = row.detail, !detail.isEmpty {
                             Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         }
@@ -142,15 +199,16 @@ private struct ResultPage: View {
                             .help("Show this item in Finder")
                     }
                 }
+                .padding(.top, 2)
                 .accessibilityElement(children: .contain)
             }
             if group.rows.count > Self.rowsShown {
                 Text("and \(group.rows.count - Self.rowsShown) more.").font(.system(size: 12)).foregroundStyle(.secondary)
             }
         }
-        .padding(Space.m)
+        .padding(Space.s)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .surface(16)
+        .surface(Radius.plate)
     }
 
     /// Items the plan left out before the run started, by reason.
@@ -164,17 +222,7 @@ private struct ResultPage: View {
         }
         .font(.system(size: 12)).foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
-    }
-
-    /// The card of what was found before the move (the model keeps that scan for the report), turning over once, then
-    /// tilting a few degrees under the pointer. Decoration stays outside `TraceCardView`, so the saved PNG never has it.
-    private func cardPreview(_ card: ShareCard) -> some View {
-        TraceCardView(card: card, width: 420)
-            .modifier(FlipFaces(angle: dealt ? 0 : 180, back: CardBack()))
-            .modifier(HoverTilt(max: 4, glare: true))
-            .lifted()
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Space.xs)
+        .padding(.horizontal, Space.xs)
     }
 
     // MARK: Bar
@@ -204,8 +252,8 @@ private struct ResultPage: View {
         .padding(.horizontal, Space.m)
         .barSurface()
         .padding(.horizontal, Space.xl)
-        .padding(.top, Space.m)
-        .padding(.bottom, Space.xl)
+        .padding(.top, Space.xs)
+        .padding(.bottom, Space.l)
     }
 
     // MARK: Words

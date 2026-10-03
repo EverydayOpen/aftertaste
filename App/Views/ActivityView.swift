@@ -79,9 +79,10 @@ private struct HistoryRunCard: View {
         VStack(alignment: .leading, spacing: Space.s) {
             HStack(alignment: .firstTextBaseline, spacing: Space.s) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(run.date.formatted(date: .abbreviated, time: .shortened)) · \(run.label)")
-                        .font(.system(size: 15, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
-                    Text(summary).font(.system(size: 13, design: .rounded)).monospacedDigit().foregroundStyle(.secondary)
+                    // The apps first (what the run was about), then when and how much.
+                    Text(apps).font(.system(size: 15, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
+                    Text("\(run.date.formatted(date: .abbreviated, time: .shortened)) · \(summary)")
+                        .font(.system(size: 13, design: .rounded)).monospacedDigit().foregroundStyle(.secondary)
                 }
                 Spacer(minLength: Space.s)
                 if run.undoable.isEmpty {
@@ -113,6 +114,19 @@ private struct HistoryRunCard: View {
         .surface(16)
     }
 
+    /// "Orbit Meet", "Orbit Meet and Lumen Player", "Orbit Meet, Lumen Player and 2 more": the apps the run moved items of.
+    private var apps: String {
+        var names: [String] = []
+        for item in run.items where !item.record.label.isEmpty && !names.contains(item.record.label) { names.append(item.record.label) }
+        switch names.count {
+        case 0: return run.label
+        case 1: return names[0]
+        case 2: return "\(names[0]) and \(names[1])"
+        case 3: return "\(names[0]), \(names[1]) and \(names[2])"
+        default: return "\(names[0]), \(names[1]) and \(names.count - 2) more"
+        }
+    }
+
     /// "14 items · 212 MB", and what was left alone.
     private var summary: String {
         var text = "\(Format.count(run.items.count, "item")) · \(Format.bytes(run.bytes))"
@@ -133,9 +147,16 @@ private struct HistoryItemRow: View {
     let item: HistoryItem
     @EnvironmentObject private var model: AppModel
 
+    /// "Orbit Meet · Logs", not the bundle ID (which is the file name and stays in the path line). A record from before the kind
+    /// was kept has only the app; one with neither falls back to the file name.
+    private static func title(_ record: UndoRecord) -> String {
+        if record.label.isEmpty { return record.originalPath.split(separator: "/").last.map(String.init) ?? record.originalPath }
+        return record.kind.map { ResidueText.label(record.label, $0) } ?? record.label
+    }
+
     var body: some View {
         let record = item.record
-        let name = record.originalPath.split(separator: "/").last.map(String.init) ?? record.originalPath
+        let name = Self.title(record)
         HStack(alignment: .top, spacing: Space.s) {
             Image(systemName: item.state.symbol).foregroundStyle(.secondary).frame(width: 18).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {

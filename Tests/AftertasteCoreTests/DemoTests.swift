@@ -145,6 +145,42 @@ final class DemoTests: XCTestCase {
         XCTAssertTrue(rows.contains { $0.blocked == .protectedByMacOS }, "macOS protected: said by name")
     }
 
+    func testBlockedScenarioAlsoShowsARunningOwnerAtTheTop() async throws {
+        let r = await backend(.blocked).scan(.orphans, .default)
+        let first = try XCTUnwrap(r.groups.first)
+        XCTAssertEqual(first.owner.bundleID, "com.example.orbitmeet", "the biggest card is first")
+        XCTAssertEqual(first.runState, .running, "the card the window opens on says so")
+        XCTAssertTrue(r.groups.dropFirst().allSatisfy { $0.runState == .notRunning })
+        // Ticked as always (the tiers do not change), but the planner never proposes a running app's items.
+        let ticked = ItemSelection.preselected(r)
+        XCTAssertTrue(first.items.contains { $0.tier == .high && ticked.contains($0.id) })
+        let plan = makePlan(r)
+        XCTAssertTrue(plan.items.allSatisfy { $0.ownerID != first.owner.bundleID })
+        XCTAssertTrue(plan.skipped.contains { $0.reason == WhyText.reason(.running) })
+        XCTAssertFalse(plan.items.isEmpty, "other apps still move")
+        // The same world without the block does not have it: the leftovers scenario is unchanged.
+        let calm = await backend(.leftovers).scan(.orphans, .default)
+        XCTAssertTrue(calm.groups.allSatisfy { $0.runState == .notRunning })
+    }
+
+    func testAnUnscriptedRunMovesEveryTickedItem() async throws {
+        let b = DemoBackend.make(.leftovers, seconds: 0, scripted: false, now: { DemoTests.now })
+        let scripted = DemoScenarios.world(.leftovers, now: Self.now)
+        let plain = DemoScenarios.world(.leftovers, now: Self.now, scripted: false)
+        XCTAssertFalse(scripted.refuses.isEmpty || scripted.drifts.isEmpty, "the default keeps both failures")
+        XCTAssertTrue(plain.refuses.isEmpty && plain.drifts.isEmpty)
+        XCTAssertEqual(plain.seeds.map(\.path), scripted.seeds.map(\.path), "only the outcomes differ, not what is on disk")
+        let before = await b.scan(.orphans, .default)
+        let plan = makePlan(before)
+        XCTAssertEqual(plan.items.count, 6, "the High rows of the sample: what the hero's button says")
+        let outcome = await b.trash(plan, .default) { _ in }
+        XCTAssertEqual(outcome.movedCount, plan.items.count)
+        XCTAssertTrue(outcome.results.allSatisfy { $0.status == .moved })
+        let after = await b.scan(.orphans, .default)
+        XCTAssertEqual(after.items.count, before.items.count - plan.items.count, "the list behind the sheet loses exactly what moved")
+        XCTAssertEqual(after.preselectedCount, 0, "nothing safe to lose is left ticked")
+    }
+
     // MARK: uninstall now
 
     func testUninstallNowOfPaperplaneNotes() async throws {

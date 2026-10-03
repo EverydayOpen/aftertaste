@@ -1,7 +1,8 @@
 # Window captures of every screen, light and dark, as the `screens` artifact (<screen>-<look>.png), and the README hero's
 # frames as the `hero-frames` artifact. A Debug build opens each screen with `-demoScreen <name>` (App/Demo.swift): a
-# synthetic Mac built in Core (DemoBackend, fictional apps), so nothing real is read or moved. Nothing is committed or
-# published from here; the lead picks what goes into site/static/shots/ and the README.
+# synthetic Mac built in Core (DemoBackend, fictional apps), so nothing real is read or moved. The hero's run is recorded
+# from a Release build with the demo code compiled in (a Debug build is too slow on a runner to judge the animation).
+# Nothing is committed or published from here; the lead picks what goes into site/static/shots/ and the README.
 #
 # Aftertaste is a window app: the main window opens at launch, so every capture is a plain window capture (no menu bar item
 # is involved). Every PNG is checked in the "Verify captures" step before the artifact is uploaded.
@@ -51,6 +52,17 @@ jobs:
           xcodebuild -project Aftertaste.xcodeproj -scheme Aftertaste -configuration Debug \
             -destination 'platform=macOS,arch=arm64' -derivedDataPath build/dd \
             SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" ENABLE_HARDENED_RUNTIME=NO build
+
+      # A Debug build is unoptimised and pegs a runner VM, so a recording of it says nothing about how the move animation
+      # runs. The hero is recorded from this one: Release (optimised, arm64 only) with the demo code compiled in, DEBUG set
+      # explicitly again. The stills stay on the Debug build above. Best effort: without it the hero falls back to Debug.
+      - name: Build (Release with the demo code, for the hero)
+        continue-on-error: true
+        run: |
+          xcodebuild -project Aftertaste.xcodeproj -scheme Aftertaste -configuration Release \
+            -destination 'platform=macOS,arch=arm64' -derivedDataPath build/dd-release \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" ENABLE_HARDENED_RUNTIME=NO build
 
       # `open` launches and activates the app, so windows are captured active. The window number and bounds come from the
@@ -103,10 +115,14 @@ jobs:
           firstRun|firstRun||99999|1
           uninstall|uninstall||99999|0
           results|results||99999|0
+          resultsRows|results||99999|0|0.12
           resultsEnd|results||99999|0|1
           maybeOnly|results|maybe-only|99999|0
           blocked|blocked||99999|0
+          blockedRows|blocked||99999|0|0.3
           adminRows|results|admin-rows|99999|0
+          adminRowsMid|results|admin-rows|99999|0|0.5
+          adminRowsEnd|results|admin-rows|99999|0|1
           quiet|quiet||99999|0
           confirm|confirm||99999|1
           running|running||99999|1
@@ -183,36 +199,38 @@ jobs:
           PY
 
       # The README hero: the preview, the confirm sheet, a Move with the rows leaving one by one (the outline fading), the
-      # result, and the Trace Report card. The move is a burst of screen-rect captures of the real window while `hero` runs
-      # (idle, Move, a 4 s run, the result), timestamped, so the frames are real animation, not a re-enactment. In `hero` the
-      # app starts the move itself and keeps the confirm and moving sheets invisible (App/Demo.swift). screencapture costs
-      # 100-250 ms per call (VERIFY), so up to three run at once, each stamped when it starts; frames.ffconcat carries each
-      # frame's real duration.
+      # result, and the Trace Report card. The move is a burst of screen-rect captures of the real window while a hero screen
+      # plays (idle, a glide down to the rows, Move, a 3 to 4 s run, the result), timestamped, so the frames are real
+      # animation, not a re-enactment. `hero` drops the sample app (four rows in one card: all of them in view); `heroOrphans`
+      # is the same run on the orphan preview. In both the app starts the move itself with no confirm sheet and no sheet during
+      # the run (App/Demo.swift, `Demo.hidesMoveSheet`), so the list is undimmed and the window stays active. The first 1.6 s
+      # (the scan and the cards dealing in) are dropped. screencapture costs 100-250 ms per call (VERIFY), so up to three run
+      # at once, each stamped when it starts; frames.ffconcat carries each frame's real duration. The run prints how many
+      # distinct frames it got: a hero where nothing moved fails here, not in review.
       - name: Hero frames
         run: |
           source "$RUNNER_TEMP/lib.sh"
-          mkdir -p hero-frames/move
+          mkdir -p hero-frames
           cp screens/results-dark.png hero-frames/01-results.png
           cp screens/confirm-dark-region.png hero-frames/02-confirm.png
           cp screens/trashed-dark-region.png hero-frames/04-result.png
-          launch hero dark
-          find_window 99999 || { echo "::error::No $APP window for hero"; exit 1; }
-          set -- $info
-          python3 - "$2,$3,$4,$5" hero-frames/move <<'PY'
-          import os, subprocess, sys, time
-          rect, out = sys.argv[1], sys.argv[2]
+          cat > "$RUNNER_TEMP/burst.py" <<'PY'
+          import hashlib, os, subprocess, sys, time
+          rect, out, seconds, skip = sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4])
           start = time.monotonic()
           shots = []   # (seconds since start, file, process)
-          while time.monotonic() - start < 10:
+          while time.monotonic() - start < seconds:
               path = "%s/f%03d.png" % (out, len(shots))
               shots.append((time.monotonic() - start, path, subprocess.Popen(["screencapture", "-x", "-R", rect, path])))
               while sum(p.poll() is None for _, _, p in shots[-3:]) >= 3: time.sleep(0.01)
-              time.sleep(0.05)
+              time.sleep(0.02)
           end = time.monotonic() - start
           for _, _, p in shots: p.wait()
-          good = [(t, f) for t, f, p in shots if p.returncode == 0 and os.path.getsize(f) > 0]
-          print("%d of %d frames captured" % (len(good), len(shots)))
-          if len(good) < 10: sys.exit("too few hero frames")
+          good = [(t, f) for t, f, p in shots if p.returncode == 0 and os.path.getsize(f) > 0 and t >= skip]
+          distinct = len({hashlib.md5(open(f, "rb").read()).hexdigest() for _, f in good})
+          print("%d of %d frames kept (%d distinct), %.1f fps" % (len(good), len(shots), distinct, len(good) / max(end - skip, 1)))
+          if len(good) < 20: sys.exit("::error::too few hero frames")
+          if distinct < 15: sys.exit("::error::the hero barely changes: nothing moved in the window")
           with open(out + "/frames.ffconcat", "w") as f:
               f.write("ffconcat version 1.0\n")
               for i, (t, name) in enumerate(good):
@@ -220,7 +238,28 @@ jobs:
                   f.write("file '%s'\nduration %.3f\n" % (os.path.basename(name), (good[i + 1][0] if i + 1 < len(good) else end) - t + hold))
               f.write("file '%s'\n" % os.path.basename(good[-1][1]))   # the concat demuxer drops the last duration unless the file repeats
           PY
-          quit
+          # The recording uses the Release build with the demo code when it was built (smooth animation); else the Debug one.
+          debug_app="$app"
+          release_app="build/dd-release/Build/Products/Release/$APP.app"
+          if [ -d "$release_app" ]; then app="$release_app"; echo "hero: Release build"; else echo "::warning::hero: no Release build, recording the Debug build"; fi
+          # record <screen> <folder> <seconds>: a failed recording is reported at the end, after the card is rendered too
+          hero_failed=""
+          record() {
+            local screen=$1 folder=$2 seconds=$3
+            mkdir -p "hero-frames/$folder"
+            launch "$screen" dark
+            if find_window 99999; then
+              set -- $info
+              python3 "$RUNNER_TEMP/burst.py" "$2,$3,$4,$5" "hero-frames/$folder" "$seconds" 1.6 || hero_failed=1
+            else
+              echo "::error::No $APP window for $screen"
+              hero_failed=1
+            fi
+            quit
+          }
+          record hero move 13
+          record heroOrphans move-orphans 14
+          app="$debug_app"
           out="$PWD/hero-frames/03-card.png"
           open -n "$app" --args -demoScreen results -demoCardOut "$out"
           for _ in $(seq 60); do [ -s "$out" ] && break; sleep 0.5; done
@@ -239,9 +278,12 @@ jobs:
           quit
           ls -l hero-frames
           ls hero-frames/move | wc -l
+          ls hero-frames/move-orphans | wc -l
+          [ -z "$hero_failed" ] || exit 1
 
       # Best effort: Homebrew's ffmpeg bottle is the one unpinned download in this workflow (VERIFY it is quick enough),
-      # so a failure here must not fail the captures. The frames above are the deliverable.
+      # so a failure here must not fail the captures. The frames above are the deliverable. Each run also gets a contact
+      # sheet (a frame every 0.7 s, 4 across) to see at a glance whether rows left and the window stayed lit.
       - name: Hero GIF (best effort)
         continue-on-error: true
         env:
@@ -249,10 +291,14 @@ jobs:
           HOMEBREW_NO_INSTALL_CLEANUP: "1"
         run: |
           command -v ffmpeg > /dev/null || brew install ffmpeg
-          ffmpeg -y -loglevel error -f concat -i hero-frames/move/frames.ffconcat \
-            -vf "fps=12,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse" \
-            hero-frames/move.gif
-          ls -l hero-frames/move.gif
+          for name in move move-orphans; do
+            ffmpeg -y -loglevel error -f concat -i "hero-frames/$name/frames.ffconcat" \
+              -vf "fps=12,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse" \
+              "hero-frames/$name.gif"
+            ffmpeg -y -loglevel error -f concat -i "hero-frames/$name/frames.ffconcat" \
+              -vf "fps=1/0.7,scale=480:-1,tile=4x4" -frames:v 1 "hero-frames/$name-sheet.png"
+          done
+          ls -l hero-frames/*.gif hero-frames/*-sheet.png
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()

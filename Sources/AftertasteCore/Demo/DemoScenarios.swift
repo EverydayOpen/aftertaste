@@ -355,7 +355,9 @@ public enum DemoScenarios {
         ]
     }
 
-    static func world(_ scenario: DemoScenario, now: Date) -> World {
+    /// `scripted: false` leaves out the two outcomes that make a run end part way (the EPERM item and the drifting folder), so
+    /// every ticked row moves: the README hero's run. Every screen that shows the result keeps them (the default).
+    static func world(_ scenario: DemoScenario, now: Date, scripted: Bool = true) -> World {
         let base = live(now: now)
         var inventory = base.apps.map { record($0, now: now, lastSeenDaysAgo: 0) }
         var seeds = base.seeds
@@ -370,9 +372,18 @@ public enum DemoScenarios {
         case .leftovers, .snapshots, .blocked:
             gone = [orbit(now), lumen(now), harbor(now), quill(now), glowPhotos(now), parcel(now)]
             // Harbor's cache is root-owned (macOS says no); a Lumen log is written to after the scan.
-            w.refuses = ["\(home)/Library/Caches/com.example.harborvpn"]
-            w.drifts = ["\(home)/Library/Logs/com.example.lumenplayer"]
+            if scripted {
+                w.refuses = ["\(home)/Library/Caches/com.example.harborvpn"]
+                w.drifts = ["\(home)/Library/Logs/com.example.lumenplayer"]
+            }
             w.protectedRoots = scenario == .blocked ? [.containers, .groupContainers] : [.cookies]
+            if scenario == .blocked {
+                // A sync helper of the biggest, first card still runs from that app's Application Support folder, so the card
+                // says "Running" at the top of the window beside the folders macOS keeps private: both ways a group can be
+                // blocked show without scrolling. (Only an executable path says it: a running bundle ID would make the app
+                // not an orphan at all, `OrphanTest`.)
+                w.running.executablePaths.append("\(home)/Library/Application Support/com.example.orbitmeet/OrbitSync")
+            }
         case .maybeOnly:
             gone = maybeOnly(now)
         case .adminRows:

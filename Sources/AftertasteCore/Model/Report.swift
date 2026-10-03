@@ -37,10 +37,14 @@ public struct TraceApp: Codable, Hashable, Sendable {
     /// System launch daemons: not launch agents, and counted apart from the privileged helper that registers one.
     public var launchDaemons: Int
     public var privilegedHelpers: Int
+    /// What the app left behind, counted the way the preview's sentence counts it (`ResidueGroup.leftBehind`): the one item count the
+    /// header, the card and the file share. It does not depend on `includeRows`, so a report without rows still has it.
+    public var itemCount: Int
     public var rows: [TraceRow]
 
     public init(label: String, version: String? = nil, bundleID: String? = nil, files: Int, bytes: UInt64, lowerBound: Bool = false,
-                unmeasuredCount: Int = 0, launchAgents: Int = 0, launchDaemons: Int = 0, privilegedHelpers: Int = 0, rows: [TraceRow] = []) {
+                unmeasuredCount: Int = 0, launchAgents: Int = 0, launchDaemons: Int = 0, privilegedHelpers: Int = 0, itemCount: Int = 0,
+                rows: [TraceRow] = []) {
         self.label = label
         self.version = version
         self.bundleID = bundleID
@@ -51,6 +55,7 @@ public struct TraceApp: Codable, Hashable, Sendable {
         self.launchAgents = launchAgents
         self.launchDaemons = launchDaemons
         self.privilegedHelpers = privilegedHelpers
+        self.itemCount = itemCount
         self.rows = rows
     }
 }
@@ -89,6 +94,7 @@ public struct TraceReport: Codable, Hashable, Sendable {
     public var launchAgents: Int { apps.reduce(0) { $0 + $1.launchAgents } }
     public var launchDaemons: Int { apps.reduce(0) { $0 + $1.launchDaemons } }
     public var privilegedHelpers: Int { apps.reduce(0) { $0 + $1.privilegedHelpers } }
+    public var itemCount: Int { apps.reduce(0) { $0 + $1.itemCount } }
     public var lowerBound: Bool { apps.contains(where: \.lowerBound) }
     public var unmeasuredCount: Int { apps.reduce(0) { $0 + $1.unmeasuredCount } }
 }

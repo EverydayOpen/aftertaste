@@ -176,11 +176,11 @@ struct TraceCardView: View {
 
     // MARK: - Hero
 
-    /// "Orbit Meet 6.2 left behind" with the app name in violet, the figures, then where it looked. Shrinks (never clips) for
-    /// a long name: a smaller size past 20 characters, then at most two lines.
+    /// "Orbit Meet 6.2 left behind" with the app name in violet, the measured figures, the listed ones on a line of their own, then
+    /// where it looked. Shrinks (never clips) for a long name: a smaller size past 20 characters, then at most two lines.
     private var hero: some View {
         let line = TraceReportText.headline(card)
-        let figures = TraceReportText.figures(card), coverage = TraceReportText.coverage(card), note = TraceReportText.listedNote(card)
+        let groups = TraceReportText.figureGroups(card), coverage = TraceReportText.coverage(card), note = TraceReportText.listedNote(card)
         return VStack(alignment: .leading, spacing: 12) {
             headline(line)
                 .font(.system(size: line.count > 20 ? 36 : 44, weight: .semibold))
@@ -188,11 +188,11 @@ struct TraceCardView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.7)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(figures)
-                .font(.system(size: Self.fit(figures.count, [(44, 22), (75, 18)], smallest: 15), weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .foregroundColor(Palette.text.opacity(0.92))
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(groups.indices, id: \.self) { i in
+                    figureLine(groups[i].map(TraceReportText.noBreak).joined(separator: " · "), primary: i == 0)
+                }
+            }
             VStack(alignment: .leading, spacing: 3) {
                 Text(coverage)
                 if let note { Text(note) }
@@ -203,25 +203,36 @@ struct TraceCardView: View {
         }
     }
 
+    /// One line of figures, shrunk to fit rather than wrapped: a count is never separated from its noun, whatever the length.
+    private func figureLine(_ text: String, primary: Bool) -> some View {
+        Text(text)
+            .font(.system(size: primary ? Self.fit(text.count, [(28, 26), (40, 22), (56, 19)], smallest: 17) : 16, weight: primary ? .semibold : .medium, design: .rounded))
+            .monospacedDigit()
+            .foregroundColor(Palette.text.opacity(primary ? 0.95 : 0.78))
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+    }
+
     /// The card is a fixed 600x315 and its caveats (the "at least" floor, what was not measured, what could not be read) must all
     /// show, so longer text is set smaller and wraps; it is never cut. `steps` are (longest text, size) pairs.
     private static func fit(_ length: Int, _ steps: [(upTo: Int, size: CGFloat)], smallest: CGFloat) -> CGFloat {
         steps.first { length <= $0.upTo }?.size ?? smallest
     }
 
-    /// The subject (the app name, or "3 removed apps") in violet, the rest in the card's text colour.
+    /// The subject (the app name, or "3 removed apps") in violet, the rest in the card's text colour. "left behind" never splits.
     private func headline(_ line: String) -> Text {
-        var out = AttributedString(line)
+        var out = AttributedString(TraceReportText.keepTogether(line))
         if let r = out.range(of: card.subject) { out[r].foregroundColor = Palette.violet }   // VERIFY on macOS 13: colour runs inside ImageRenderer
         return Text(out).foregroundColor(Palette.text)
     }
 
     // MARK: - Footer
 
-    /// Provenance on one line, the address under it, both below the horizon.
+    /// Provenance on one line, the address under it, both below the horizon. Not the monospaced design: its hyphen is drawn as wide as
+    /// an en dash, so the plain-hyphen date read as "2026–10–03". Tabular digits keep the numbers steady.
     private var footer: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(TraceReportText.provenance(card)).font(.system(size: 11, design: .monospaced))
+            Text(TraceReportText.provenance(card)).font(.system(size: 12)).monospacedDigit()
             Text(Self.address).font(.system(size: 12, weight: .medium))
         }
         .foregroundColor(Palette.muted)

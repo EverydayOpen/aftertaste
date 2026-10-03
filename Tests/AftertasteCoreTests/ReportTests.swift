@@ -272,6 +272,104 @@ final class TraceReportTests: XCTestCase {
         XCTAssertEqual(report.privilegedHelpers, 1)
     }
 
+    func testTheCardSetsMeasuredFiguresApartFromListedOnes() {
+        let c = card(orbitResult())
+        XCTAssertEqual(TraceReportText.figureGroups(c), [["214 files", "1.3 GB"], ["2 launch agents", "1 privileged helper"]])
+        let all = TraceReportText.figureGroups(c).flatMap { $0 }
+        XCTAssertEqual(all.joined(separator: " · "), TraceReportText.figures(c), "the same words as the plain line, split in two")
+
+        // A floor and an unmeasured item stay with the measured figures; the plain line keeps its original order.
+        var cut = item(.caches, "com.example.orbitmeet.cut", size: 2_000_000_000, files: 50)
+        cut.sizeState = .atLeast
+        var protected = item(.containers, "com.example.orbitmeet", tier: .handsOff, kind: .yourData, blocked: .protectedByMacOS)
+        protected.sizeState = .notMeasured
+        let floor = card(orbitResult(extraItems: [cut, protected]))
+        XCTAssertEqual(TraceReportText.figureGroups(floor), [["at least 264 files", "at least 3.3 GB", "1 item not measured"], ["2 launch agents", "1 privileged helper"]])
+        XCTAssertEqual(TraceReportText.figures(floor), "at least 264 files · at least 3.3 GB · 2 launch agents · 1 privileged helper · 1 item not measured")
+
+        // Only listed things: one line, not an empty first line. Nothing at all: the single sentence.
+        let listedOnly = ShareCard(subject: "x", files: 0, bytes: 0, launchDaemons: 2, privilegedHelpers: 1, coverage: CoverageFacts(looked: 1, total: 1), osVersion: "", scannedAt: T.now)
+        XCTAssertEqual(TraceReportText.figureGroups(listedOnly), [["2 launch daemons", "1 privileged helper"]])
+        let empty = ShareCard(subject: "x", files: 0, bytes: 0, coverage: CoverageFacts(looked: 1, total: 1), osVersion: "", scannedAt: T.now)
+        XCTAssertEqual(TraceReportText.figureGroups(empty), [["Nothing found"]])
+        let waiting = ShareCard(subject: "x", files: 0, bytes: 0, coverage: CoverageFacts(looked: 1, total: 1, recentlyRemoved: 1), osVersion: "", scannedAt: T.now)
+        XCTAssertEqual(TraceReportText.figureGroups(waiting), [["Nothing found yet"]])
+    }
+
+    func testNoWordIsLeftAloneOnALine() {
+        let nb = "\u{00A0}"
+        XCTAssertEqual(TraceReportText.noBreak("2 privileged helpers"), "2\(nb)privileged\(nb)helpers")
+        XCTAssertEqual(TraceReportText.noBreak("2 privileged helpers").replacingOccurrences(of: nb, with: " "), "2 privileged helpers")
+        XCTAssertEqual(TraceReportText.keepTogether("Orbit Meet 6.2 left behind"), "Orbit Meet 6.2 left\(nb)behind")
+        XCTAssertEqual(TraceReportText.keepTogether("6 removed apps left behind"), "6 removed apps left\(nb)behind")
+        XCTAssertEqual(TraceReportText.keepTogether("left behind"), "left behind", "two words: nothing to join")
+        XCTAssertEqual(TraceReportText.keepTogether("a b c d", lastWords: 3), "a b\(nb)c\(nb)d")
+        // The subject (what the card colours) is untouched, so the view can still find it in the line.
+        let line = TraceReportText.keepTogether(TraceReportText.headline(card(orbitResult())))
+        XCTAssertTrue(line.contains("Orbit Meet 6.2"))
+        // The plain text, the label and the file never carry no-break spaces.
+        let c = card(orbitResult())
+        for text in [TraceReportText.figures(c), TraceReportText.headline(c), TraceReportText.provenance(c), TraceReportText.plainText(c, footer: "x")] {
+            XCTAssertFalse(text.contains(nb), text)
+        }
+    }
+
+    func testTheFooterDateIsPlainAsciiHyphens() {
+        let c = card(orbitResult())
+        let provenance = TraceReportText.provenance(c)
+        XCTAssertTrue(provenance.contains("scanned 2026-10-03 "), provenance)
+        let date = Format.date(c.scannedAt)
+        XCTAssertEqual(date, "2026-10-03")
+        XCTAssertTrue(date.unicodeScalars.allSatisfy { $0.isASCII }, "a hyphen-minus, never an en dash or a non-breaking hyphen")
+        XCTAssertEqual(date.filter { $0 == "-" }.count, 2)
+        XCTAssertTrue(TraceReportText.markdown(TraceReportText.report(from: orbitResult(), options: .init(), now: T.now)).hasPrefix("# What Aftertaste found on this Mac on 2026-10-03\n"))
+    }
+
+    func testTheMacOSVersionIsTheOneTheScanRecorded() {
+        for version in ["26.1", "15.4.1", "13.7"] {
+            var r = orbitResult()
+            r.osVersion = version
+            let report = TraceReportText.report(from: r, options: .init(), now: T.now)
+            XCTAssertEqual(report.osVersion, version)
+            XCTAssertEqual(TraceReportText.card(from: report).osVersion, version)
+            XCTAssertTrue(TraceReportText.provenance(TraceReportText.card(from: report)).hasPrefix("macOS \(version) · scanned "))
+            XCTAssertTrue(TraceReportText.markdown(report).contains("macOS \(version) · measured"))
+            XCTAssertTrue(TraceReportText.json(report).contains("\"osVersion\" : \"\(version)\""))
+        }
+        var unknown = orbitResult()
+        unknown.osVersion = ""
+        XCTAssertTrue(TraceReportText.provenance(card(unknown)).hasPrefix("scanned "), "no version, no invented one")
+    }
+
+    func testEveryNumberComesFromOneReport() {
+        let other = T.app("com.example.zoomish", "Zoomish Call", version: "5.1")
+        let shared = item(.groupContainers, "UBF8T346G9.Office", tier: .handsOff, kind: .shared, size: 9_000_000_000, files: 99_000, blocked: .sharedWithInstalled, rule: "U5")
+        let second = ResidueGroup(owner: other, isOrphan: false, items: [item(.caches, "com.example.zoomish", size: 2_000_000, files: 4, owner: other),
+                                                                       item(.preferences, "com.example.zoomish.plist", kind: .settings, size: 1000, files: 1, owner: other)])
+        var r = orbitResult(extraItems: [shared])
+        r.groups.append(second)
+        // The preview's sentence counts what was left behind: not the app bundle, not what another installed app uses.
+        let left = r.leftBehind.count
+        XCTAssertEqual(left, r.itemCount - 2, "the bundle and the shared item are in the scan but not in what was left behind")
+
+        for hide in [false, true] {
+            for rows in [false, true] {
+                let report = TraceReportText.report(from: r, options: .init(hideNames: hide, includeRows: rows), now: T.now)
+                XCTAssertEqual(report.itemCount, left, "hide \(hide), rows \(rows)")
+                XCTAssertEqual(report.itemCount, report.apps.reduce(0) { $0 + $1.itemCount })
+                XCTAssertTrue(PlanText.previewHeader(r).contains("in \(Format.count(report.itemCount, "item")) for 2 apps"), PlanText.previewHeader(r))
+                let c = TraceReportText.card(from: report)
+                XCTAssertEqual(c.files, report.files)
+                XCTAssertEqual(c.bytes, report.bytes)
+                XCTAssertEqual(c.launchAgents, report.launchAgents)
+                XCTAssertEqual(c.privilegedHelpers, report.privilegedHelpers)
+                XCTAssertEqual(c.files, r.leftBehind.reduce(0) { $0 + $1.fileCount })
+                XCTAssertEqual(c.bytes, r.leftBehind.reduce(0) { $0 + $1.size })
+                XCTAssertTrue(TraceReportText.json(report).contains("\"itemCount\" : \(report.apps[0].itemCount)"))
+            }
+        }
+    }
+
     func testMarkdownTableCellsCannotBreakTheTable() {
         var weird = item(.caches, "pipe|name\nline", size: 10, files: 1)
         weird.why = "a | b\nc"

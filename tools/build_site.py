@@ -91,14 +91,20 @@ def orbit_sample():
     src = (ROOT / "Sources/AftertasteCore/Demo/DemoScenarios.swift").read_text(encoding="utf-8")
     m = re.search(r"static func orbit\(.*?\n    \}\n", src, re.S)
     if not m: sys.exit("build_site: DemoScenarios.swift has no orbit() to read the sample numbers from")
-    size, days, launch = {}, {}, 0
-    for root, nbytes, age in re.findall(r"^\s*\.(?:dir|file)\(\.(\w+), .+?, ([\d_]+), (?:\d+, )?(\d+)\)", m[0], re.M):
+    size, days, launch, helpers, files, rows, total = {}, {}, 0, 0, 0, 0, 0
+    for kind, root, nbytes, count, age in re.findall(r"^\s*\.(dir|file)\(\.(\w+), .+?, ([\d_]+), (?:(\d+), )?(\d+)\)", m[0], re.M):
+        rows, total = rows + 1, total + int(nbytes.replace("_", ""))
+        files += int(count) if kind == "dir" else 1
         if root == "launchAgents": launch += 1
+        elif root == "systemPrivilegedHelperTools": helpers += 1
         else: size[root], days[root] = int(nbytes.replace("_", "")), int(age)
     need = ("caches", "logs", "savedState", "webKit", "httpStorages", "preferences", "applicationSupport")
-    if launch != 2 or any(r not in size for r in need): sys.exit("build_site: orbit() no longer matches the sample (2 launch agents, 7 folders)")
+    if launch != 2 or helpers != 1 or any(r not in size for r in need): sys.exit("build_site: orbit() no longer matches the sample (2 launch agents, 1 helper, 7 folders)")
     if days["caches"] < 30 or days["logs"] < 30:
         sys.exit("build_site: the demo's Orbit Meet cache or log is under 30 days old, so it would not be High (README, orphan rule)")
+    who = re.search(r'app\(id, "([^"]+)", "[^"]*", team: "[^"]*", version: "([^"]+)"', m[0])
+    osv = re.search(r'static let osVersion = "([^"]+)"', src)
+    if not who or not osv: sys.exit("build_site: DemoScenarios.swift no longer has the app name, version or osVersion the card reads")
     segs = [("Caches", size["caches"], True), ("Logs", size["logs"], True),
             ("Saved state, WebKit", size["savedState"] + size["webKit"], False),
             ("Web storage, settings", size["httpStorages"] + size["preferences"], False),
@@ -114,6 +120,10 @@ def orbit_sample():
            f'<p class="rbar-sum">{fmt_bytes(high)} selected (rebuilds itself) · {fmt_bytes(other)} not selected · {launch} launch agents listed</p>')
     return {"orbitCaches": fmt_bytes(size["caches"]), "orbitLogs": fmt_bytes(size["logs"]), "orbitState": fmt_bytes(segs[2][1]),
             "orbitData": fmt_bytes(size["applicationSupport"]), "orbitBar": Raw(bar),
+            # The sidebar row of the app: "10 items · 1.3 GB", chips "2 High" and "5 Medium" (the rest is listed only).
+            "orbitItems": rows, "orbitFiles": files, "orbitTotal": fmt_bytes(total), "orbitHigh": fmt_bytes(high),
+            "orbitHighN": 2, "orbitMediumN": rows - launch - helpers - 2, "orbitListedN": launch + helpers,
+            "orbitName": f"{who[1]} {who[2]}", "orbitOS": osv[1], "orbitLaunch": launch, "orbitHelpers": helpers,
             # styles.css sizes the bar's segments by MB (.rbar i:nth-child(n)); check() compares them with these.
             "orbitGrow": [round(b / 1e6) if b >= 1e7 else round(b / 1e6, 1) for _, b, _ in segs] + [.1]}
 
@@ -131,6 +141,37 @@ def coverage_sample():
     return f"Looked in {places - blocked} of {places} places." + (f" {blocked} protected by macOS." if blocked else "")
 
 
+def card_sample(v):
+    """The Trace Report card of the sample app, worded as TraceReportText does (APP4 §2.4): the home page's hero card and the two
+    static faces under "A receipt" are built from this one place. Counts come from the Core demo (orbit_sample), so a zero count is
+    left out and the "listed, not removed" note names only what the card counts."""
+    plural = lambda n, w: f"{n} {w}" + ("" if n == 1 else "s")
+    num, unit = v["orbitTotal"].split()
+    figs = [f"<b>{v['orbitFiles']}</b> files", f"<b>{num}</b> {unit}", f"<b>{v['orbitLaunch']}</b> launch agent" + ("" if v["orbitLaunch"] == 1 else "s"),
+            f"<b>{v['orbitHelpers']}</b> privileged helper" + ("" if v["orbitHelpers"] == 1 else "s")]
+    plain = [f"{v['orbitFiles']} files", v["orbitTotal"], plural(v["orbitLaunch"], "launch agent"), plural(v["orbitHelpers"], "privileged helper")]
+    note = "Launch agents and helpers are listed, not removed."
+    when, how = f"macOS {v['orbitOS']} · scanned 2026-10-03", "measured on this Mac, nothing sent anywhere"   # one line on the 1200 px card, two here
+    prov = f"{when} · {how}"
+    site = urlsplit(v["baseURL"]); where = site.netloc + site.path
+    footer = "This is a list of what was found in the places listed above. It is not proof that anything was erased."
+    src = (ROOT / "Sources/AftertasteCore/Text/PlanText.swift").read_text(encoding="utf-8")
+    nc = re.search(r"func notCovered\(\) -> \[String\] \{\s*\[(.*?)\]\s*\}", src, re.S)
+    if not nc or "/private/var" not in nc[1]: sys.exit("build_site: PlanText.notCovered() no longer has the shape card_sample() reads")
+    not_covered = " · ".join(re.findall(r'"([^"]+)"', nc[1]))
+    front = ('<p class="card-brand"><svg aria-hidden="true"><use href="#i-mark"/></svg>Aftertaste<span class="tag violet">Sample data</span></p>\n'
+             f'<p class="card-h"><b>{html.escape(v["orbitName"])}</b> left behind</p>\n'
+             f'<p class="card-figs">{" · ".join(figs)}</p>\n'
+             f'<p class="card-cov">{v["coverageSample"]}<br>{note}</p>\n'
+             f'<p class="card-prov"><span>{when}</span><span>{how}</span><span>{where}</span></p>')
+    back = (f'<p class="card-foot">{footer}</p>\n'
+            f'<p class="card-nc"><span class="label">Not covered</span>{html.escape(not_covered)}</p>')
+    aria = (f"Illustration with sample data: the Aftertaste Trace Report card. {v['orbitName']} left behind: {', '.join(plain)}. "
+            f"{v['coverageSample']} {note} {prov.replace(' · ', ', ')}. On the back: {footer[0].lower() + footer[1:-1]}; "
+            f"not covered: {not_covered.lower()}.")
+    return {"cardFront": Raw(front), "cardBack": Raw(back), "cardAria": aria, "cardPlain": ", ".join(plain)}
+
+
 def values(site):
     v = dict(site)
     base = site["baseURL"]
@@ -146,6 +187,7 @@ def values(site):
           "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}
     v.update(orbit_sample())
     v["coverageSample"] = coverage_sample()
+    v.update(card_sample(v))
     v["softwareJSON"] = Raw(json.dumps(ld, ensure_ascii=False).replace("</", "<\\/"))
     return v
 
@@ -213,6 +255,8 @@ def build(out, site):
         shutil.rmtree(out)
     shutil.copytree(SITE / "static", out)
     (out / ".nojekyll").write_text("")   # serve files as-is on GitHub Pages
+    css = out / "styles.css"   # the shipped sheet carries no comments (they are for people, and count against the budget)
+    css.write_text(re.sub(r"/\*.*?\*/\s*", "", css.read_text(encoding="utf-8"), flags=re.S), encoding="utf-8", newline="\n")
     listed = []
     for rel, url, meta, body in pages():
         meta = {k: fill(x, v, rel, str) if isinstance(x, str) else x for k, x in meta.items()}

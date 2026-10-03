@@ -6,10 +6,11 @@ import Foundation
 /// copy, like the live backend does against the disk.
 public enum DemoBackend {
     /// `seconds` is how long a whole run takes (staggered per item, so the list animates); 0 for tests.
+    /// `scripted: false` drops the scenario's two failing outcomes, so a run moves every ticked item (the README hero).
     /// `now` is the only clock: it stamps the world once and every log line.
-    public static func make(_ scenario: DemoScenario, seconds: Double = 1.2,
+    public static func make(_ scenario: DemoScenario, seconds: Double = 1.2, scripted: Bool = true,
                             now: @escaping @Sendable () -> Date = { Date() }) -> Backend {
-        let state = DemoState(DemoScenarios.world(scenario, now: now()), start: now())
+        let state = DemoState(DemoScenarios.world(scenario, now: now(), scripted: scripted), start: now())
         return Backend(
             installedApps: { state.installedSnapshot() },
             identify: { state.identify($0) },

@@ -1,13 +1,17 @@
+import AftertasteCore
 import SwiftUI
 
 // docs/DESIGN.md §6: the afterglow wash, porcelain surfaces, wells, the lifted object, and the small display parts.
 // Tirekick's recipes with the violet-black ink. Pure fills and strokes, so ImageRenderer-safe.
 
 /// The afterglow behind stage screens (welcome, the result sheet, Erase readiness, the Trace Report): the plain window
-/// plus the sky along the top edge and the horizon line under it, as a static wash. Increase Contrast gets the plain
-/// window. Drawn once per size.
+/// plus the sky along the top edge, as a static wash that is gone well before any content starts. It never draws a
+/// line: a hairline at a fixed height crossed text on every screen whose layout differs (first CI screenshots), so the
+/// horizon is opt-in, for a caller that has reserved clear space for it (`horizon:` = the line's y from the top).
+/// Increase Contrast gets the plain window. Drawn once per size.
 struct Dawn: View {
     var strength = 1.0
+    var horizon: CGFloat? = nil
     @Environment(\.colorScheme) private var scheme
     @Environment(\.colorSchemeContrast) private var contrast
 
@@ -20,12 +24,13 @@ struct Dawn: View {
                     // Violet to teal, fading into the window: the sky before sunrise, or by day at a fraction of the strength.
                     LinearGradient(colors: [Brand.skyTop.opacity((dark ? 0.9 : 0.12) * strength), Brand.skyLow.opacity((dark ? 0.7 : 0.14) * strength), .clear],
                                    startPoint: .top, endPoint: .bottom)
-                        .frame(height: 220)
+                        .frame(height: 200)
                     Spacer(minLength: 0)
                 }
-                // The horizon: one key light per scene (rule 2). A 1pt line with a soft pool below it. Horizon draws its
-                // line through the middle of a 0.32 x width frame, so 130 puts the line near the sky's lower edge. VERIFY by eye.
-                Horizon(tint: Brand.horizon, width: 560, soft: true).opacity(0.9 * strength).offset(y: 130)
+                if let horizon {
+                    // Horizon draws its line through the middle of a 0.32 x width frame, so the offset is y minus half of that.
+                    Horizon(tint: Brand.horizon, width: 440, soft: true).opacity(0.6 * strength).offset(y: horizon - 440 * 0.16)
+                }
             }
         }
         .ignoresSafeArea()
@@ -33,6 +38,12 @@ struct Dawn: View {
         .accessibilityHidden(true)
     }
 }
+
+private let sidebarFill = Color(nsColor: NSColor(name: nil) { appearance in
+    appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        ? NSColor(srgbRed: 0.075, green: 0.075, blue: 0.082, alpha: 1)
+        : NSColor(srgbRed: 0.925, green: 0.925, blue: 0.937, alpha: 1)
+})
 
 extension View {
     /// A symbol in a recessed, tinted squircle: the site's icon well. Pure fills, so ImageRenderer-safe.
@@ -46,6 +57,13 @@ extension View {
         compositingGroup()
             .shadow(color: .black.opacity(0.10), radius: 1.5, y: 1)
             .shadow(color: .black.opacity(0.20), radius: 24, y: 14)
+    }
+
+    /// One flat fill for the whole sidebar column, under the traffic lights too. The List's own background is a material
+    /// that stops at the toolbar, which left a white band over a grey list (first CI screenshots). `background(_:)` with
+    /// a colour extends under the safe area. Apply to the sidebar's List. VERIFY by eye on the CI capture, light and dark.
+    func sidebarSurface() -> some View {
+        scrollContentBackground(.hidden).background(sidebarFill)
     }
 
     /// Evidence lines: a recessed well. The text stays primary and selectable.
@@ -201,26 +219,82 @@ struct Metric: View {
 struct Tag: View {
     let text: String
     var tint: Color = .secondary
+    /// The sidebar's size: tighter padding and dot, so three tier chips fit one line.
+    var compact = false
     @Environment(\.colorSchemeContrast) private var contrast
 
-    init(text: String, tint: Color = .secondary) {
+    init(text: String, tint: Color = .secondary, compact: Bool = false) {
         self.text = text
         self.tint = tint
+        self.compact = compact
     }
 
-    init(_ text: String, tint: Color = .secondary) {
-        self.init(text: text, tint: tint)
+    init(_ text: String, tint: Color = .secondary, compact: Bool = false) {
+        self.init(text: text, tint: tint, compact: compact)
     }
 
     var body: some View {
-        HStack(spacing: 5) {
-            Circle().fill(tint).frame(width: 6, height: 6).accessibilityHidden(true)
-            Text(text).font(.caption.weight(.semibold)).monospacedDigit()
+        HStack(spacing: compact ? 4 : 5) {
+            Circle().fill(tint).frame(width: compact ? 5 : 6, height: compact ? 5 : 6).accessibilityHidden(true)
+            Text(text).font(.caption.weight(.semibold)).monospacedDigit().lineLimit(1)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
+        .fixedSize()
+        .padding(.horizontal, compact ? 6 : 8)
+        .padding(.vertical, compact ? 2 : 3)
         .background(tint.opacity(0.14), in: Capsule())
         .overlay(Capsule().strokeBorder(contrast == .increased ? Color.primary.opacity(0.4) : tint.opacity(0.3), lineWidth: contrast == .increased ? 1 : 0.5))
+    }
+}
+
+/// Wraps its children onto as many lines as the offered width needs, left to right. Unlike `ViewThatFits` over an
+/// HStack and a VStack it fills a line before starting the next, so three tier chips take one line or two, never three.
+/// With no width offered it lays everything on one line.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 4
+    var lineSpacing: CGFloat = 4
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        arrange(proposal.width, subviews).size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let origins = arrange(bounds.width, subviews).origins
+        for (subview, origin) in zip(subviews, origins) {
+            subview.place(at: CGPoint(x: bounds.minX + origin.x, y: bounds.minY + origin.y), anchor: .topLeading, proposal: .unspecified)
+        }
+    }
+
+    private func arrange(_ width: CGFloat?, _ subviews: Subviews) -> (size: CGSize, origins: [CGPoint]) {
+        let limit = width ?? .infinity
+        var origins: [CGPoint] = []
+        var x: CGFloat = 0, y: CGFloat = 0, lineHeight: CGFloat = 0, widest: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > limit {
+                y += lineHeight + lineSpacing
+                x = 0
+                lineHeight = 0
+            }
+            origins.append(CGPoint(x: x, y: y))
+            x += size.width + spacing
+            widest = max(widest, x - spacing)
+            lineHeight = max(lineHeight, size.height)
+        }
+        return (CGSize(width: widest, height: subviews.isEmpty ? 0 : y + lineHeight), origins)
+    }
+}
+
+/// A sidebar row's tier chips: "2 High", "5 Medium", "1 Review", only the tiers that have items, in a wrapping flow.
+/// The word is in the chip; only High has the violet dot (`Tier.tint`).
+struct TierChips: View {
+    let group: ResidueGroup
+
+    var body: some View {
+        FlowLayout(spacing: 4, lineSpacing: 4) {
+            ForEach([Tier.high, .medium, .low], id: \.self) { tier in
+                if group.count(tier) > 0 { Tag(text: "\(group.count(tier)) \(tier.displayName)", tint: tier.tint, compact: true) }
+            }
+        }
     }
 }
 
