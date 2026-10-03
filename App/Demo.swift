@@ -193,8 +193,7 @@ enum Demo {
 
     /// A run that reports the first `fraction` of its items as moved, evenly over `seconds`, then waits (the `running`
     /// capture). The real Trasher is never involved: this is a Backend closure in demo mode only.
-    static func trace(_ s: String) { FileHandle.standardError.write(Data(("[demo] " + s + "
-").utf8)) }
+    static func trace(_ s: String) { FileHandle.standardError.write(Data(("[demo] " + s + "\n").utf8)) }
 
     private static func hang(_ plan: TrashPlan, _ progress: @Sendable (ItemOutcome) -> Void, seconds: Double, at fraction: Double) async -> TrashOutcome {
         let started = Date()
