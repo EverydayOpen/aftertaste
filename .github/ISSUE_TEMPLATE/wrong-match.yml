@@ -1,0 +1,55 @@
+name: Report a wrong match
+description: Aftertaste listed or pre-selected something that belongs to an app that is still installed, or missed something it should have found.
+title: "Wrong match: "
+labels: ["wrong-match"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. This is the most useful report there is: it becomes a test for the matching rules.
+        **If Aftertaste moved something you did not tick, say so first and stop using the beta until it is answered.**
+        Items go to the Trash, so look there before anything else (History > Undo puts them back).
+        Never paste file contents. **Help > Copy Diagnostics** lists which folders macOS let Aftertaste read and holds no file names;
+        read it once before posting.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What went wrong?
+      options:
+        - It moved, or pre-selected, something that belongs to an app that is still installed
+        - It moved something I did not tick
+        - It listed something as High that I would not have expected to rebuild itself
+        - It missed leftovers of an app I removed
+        - Undo did not put something back
+        - A folder was reported as protected by macOS and I want to share what happened
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: The app name and version (public names are fine here), which row or folder (for example "Application Support, the folder named after the vendor"), and how you know it belongs to an installed app or was still needed. You can hide names with the report's "Hide app names" switch.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Help > Copy Diagnostics
+      description: Paste the text.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and chip
+      placeholder: macOS 15.6, Apple silicon
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Aftertaste version
+      placeholder: 1.0.0-beta.1
+    validations:
+      required: true

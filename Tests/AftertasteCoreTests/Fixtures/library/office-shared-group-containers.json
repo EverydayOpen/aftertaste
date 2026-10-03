@@ -1,0 +1,46 @@
+{
+  "name": "office-shared-group-containers",
+  "note": "Word is being uninstalled; Excel and Outlook stay. Office Group Containers are named by the shared Team ID and serve every Office app.",
+  "kind": "app",
+  "target": "com.microsoft.Word",
+  "apps": [
+    {"id": "com.microsoft.Word", "name": "Microsoft Word", "team": "UBF8T346G9", "groups": ["UBF8T346G9.Office", "UBF8T346G9.OfficeOsfWebHost"]},
+    {"id": "com.microsoft.Excel", "name": "Microsoft Excel", "team": "UBF8T346G9", "groups": ["UBF8T346G9.Office", "UBF8T346G9.OfficeOsfWebHost"]},
+    {"id": "com.microsoft.Outlook", "name": "Microsoft Outlook", "team": "UBF8T346G9", "groups": ["UBF8T346G9.Office", "UBF8T346G9.Outlook"]}
+  ],
+  "library": {
+    "Library/Caches": ["com.microsoft.Word", "com.microsoft.Excel", "com.microsoft.Outlook", "Microsoft"],
+    "Library/Preferences": ["com.microsoft.Word.plist", "com.microsoft.Excel.plist"],
+    "Library/Containers": ["com.microsoft.Word", "com.microsoft.Excel", "com.microsoft.Outlook"],
+    "Library/Group Containers": ["UBF8T346G9.Office", "UBF8T346G9.OfficeOsfWebHost", "UBF8T346G9.ms", "UBF8T346G9.Outlook", "UBF8T346G9.OfficeOneDriveSyncIntegration"],
+    "Library/Application Support": ["Microsoft", "Microsoft Word"]
+  },
+  "sizes": {
+    "Library/Containers/com.microsoft.Word": 5000000,
+    "Library/Containers/com.microsoft.Excel": 5000000,
+    "Library/Group Containers/UBF8T346G9.Office": 9000000,
+    "Library/Group Containers/UBF8T346G9.OfficeOsfWebHost": 1000,
+    "Library/Group Containers/UBF8T346G9.ms": 1000,
+    "Library/Group Containers/UBF8T346G9.Outlook": 1000,
+    "Library/Group Containers/UBF8T346G9.OfficeOneDriveSyncIntegration": 1000
+  },
+  "expect": {
+    "tiers": {
+      "/Applications/Microsoft Word.app": "high",
+      "Library/Caches/com.microsoft.Word": "high",
+      "Library/Preferences/com.microsoft.Word.plist": "high",
+      "Library/Containers/com.microsoft.Word": "medium",
+      "Library/Application Support/Microsoft Word": "low",
+      "Library/Group Containers/UBF8T346G9.Office": "handsOff",
+      "Library/Group Containers/UBF8T346G9.OfficeOsfWebHost": "handsOff",
+      "Library/Group Containers/UBF8T346G9.ms": "handsOff",
+      "Library/Group Containers/UBF8T346G9.Outlook": "handsOff",
+      "Library/Group Containers/UBF8T346G9.OfficeOneDriveSyncIntegration": "handsOff"
+    },
+    "blocked": {"Library/Group Containers/UBF8T346G9.Office": "sharedWithInstalled"},
+    "absent": ["Library/Caches/com.microsoft.Excel", "Library/Caches/com.microsoft.Outlook", "Library/Caches/Microsoft", "Library/Preferences/com.microsoft.Excel.plist",
+               "Library/Containers/com.microsoft.Excel", "Library/Containers/com.microsoft.Outlook", "Library/Application Support/Microsoft"],
+    "installedOwned": ["Library/Group Containers/UBF8T346G9.Office", "Library/Group Containers/UBF8T346G9.OfficeOsfWebHost", "Library/Group Containers/UBF8T346G9.ms",
+                       "Library/Group Containers/UBF8T346G9.Outlook", "Library/Group Containers/UBF8T346G9.OfficeOneDriveSyncIntegration"]
+  }
+}

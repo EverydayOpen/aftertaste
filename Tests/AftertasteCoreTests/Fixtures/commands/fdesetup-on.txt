@@ -1,0 +1,2 @@
+# handwritten (replace with the probe workflow output)
+FileVault is On.

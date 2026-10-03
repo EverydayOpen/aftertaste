@@ -1,0 +1,21 @@
+{
+  "name": "firefox-developer-edition-orphans",
+  "note": "Stable Firefox is gone but Firefox Developer Edition is installed. The profiles folder is shared by every channel and stays untouched; only the stable-ID leftovers are offered.",
+  "kind": "orphans",
+  "apps": [
+    {"id": "org.mozilla.firefoxdeveloperedition", "name": "Firefox Developer Edition", "path": "/Applications/Firefox Developer Edition.app"}
+  ],
+  "library": {
+    "Library/Preferences": ["org.mozilla.firefox.plist", "org.mozilla.firefoxdeveloperedition.plist"],
+    "Library/Caches": ["org.mozilla.firefox", "org.mozilla.firefoxdeveloperedition"],
+    "Library/Application Support": ["Firefox"]
+  },
+  "expect": {
+    "tiers": {
+      "Library/Application Support/Firefox": "handsOff"
+    },
+    "blocked": {"Library/Application Support/Firefox": "siblingInstalled"},
+    "absent": ["Library/Caches/org.mozilla.firefoxdeveloperedition", "Library/Preferences/org.mozilla.firefoxdeveloperedition.plist"],
+    "installedOwned": ["Library/Application Support/Firefox", "Library/Caches/org.mozilla.firefoxdeveloperedition", "Library/Preferences/org.mozilla.firefoxdeveloperedition.plist"]
+  }
+}

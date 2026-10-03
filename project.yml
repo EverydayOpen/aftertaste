@@ -1,0 +1,39 @@
+# XcodeGen spec. Run `xcodegen generate` (CI does); the .xcodeproj is never committed.
+name: Aftertaste
+options:
+  deploymentTarget:
+    macOS: "13.0"   # BUILD_PLAN section 1: ImageRenderer, NavigationSplitView and urlsForApplications(withBundleIdentifier:) need macOS 13
+packages:
+  Aftertaste:
+    path: .   # this repo's Package.swift (AftertasteCore + AftertasteMac). VERIFY: Xcode accepts a local package in the project's own folder (Overstay and Tirekick do the same).
+targets:
+  Aftertaste:
+    type: application
+    platform: macOS
+    sources:
+      - App
+    dependencies:
+      - package: Aftertaste
+        products:
+          - AftertasteCore
+          - AftertasteMac
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.everydayopen.aftertaste
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        ENABLE_HARDENED_RUNTIME: "YES"
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor   # dusk violet, the one accent
+        GENERATE_INFOPLIST_FILE: "NO"
+        DEAD_CODE_STRIPPING: "YES"
+        # Set directly instead of `info:`/`entitlements:`, which would regenerate (overwrite) these hand-written files.
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/Aftertaste.entitlements
+schemes:
+  Aftertaste:
+    build:
+      targets:
+        Aftertaste: all

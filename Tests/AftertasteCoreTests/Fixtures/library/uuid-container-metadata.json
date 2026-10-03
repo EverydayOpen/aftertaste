@@ -1,0 +1,32 @@
+{
+  "name": "uuid-container-metadata",
+  "note": "Containers named by a UUID belong to an app only when their metadata plist names its ID. Unreadable metadata means no guess.",
+  "kind": "app",
+  "target": "com.example.orbit",
+  "apps": [
+    {"id": "com.example.orbit", "name": "Orbit App"},
+    {"id": "com.example.other", "name": "Other App"}
+  ],
+  "library": {
+    "Library/Containers": [
+      {"name": "3F2A9C70-AAAA-BBBB-CCCC-123456789ABC", "container": "com.example.orbit"},
+      {"name": "4A3B0D81-AAAA-BBBB-CCCC-123456789ABC", "container": "com.example.other"},
+      {"name": "5B4C1E92-AAAA-BBBB-CCCC-123456789ABC"},
+      {"name": "com.example.orbit"}
+    ]
+  },
+  "sizes": {
+    "Library/Containers/3F2A9C70-AAAA-BBBB-CCCC-123456789ABC": 1000000,
+    "Library/Containers/4A3B0D81-AAAA-BBBB-CCCC-123456789ABC": 1000000,
+    "Library/Containers/5B4C1E92-AAAA-BBBB-CCCC-123456789ABC": 1000000
+  },
+  "expect": {
+    "tiers": {
+      "Library/Containers/3F2A9C70-AAAA-BBBB-CCCC-123456789ABC": "medium",
+      "Library/Containers/com.example.orbit": "handsOff"
+    },
+    "blocked": {"Library/Containers/com.example.orbit": "protectedByMacOS"},
+    "absent": ["Library/Containers/4A3B0D81-AAAA-BBBB-CCCC-123456789ABC", "Library/Containers/5B4C1E92-AAAA-BBBB-CCCC-123456789ABC"],
+    "installedOwned": ["Library/Containers/4A3B0D81-AAAA-BBBB-CCCC-123456789ABC"]
+  }
+}

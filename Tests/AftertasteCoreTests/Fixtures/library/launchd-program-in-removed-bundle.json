@@ -1,0 +1,35 @@
+{
+  "name": "launchd-program-in-removed-bundle",
+  "note": "A launch agent is owned only by proof: its label starts with the ID, or its program is inside the removed bundle. A shared updater agent and an agent that merely mentions the app are not listed.",
+  "kind": "app",
+  "target": "com.example.orbit",
+  "apps": [
+    {"id": "com.example.orbit", "name": "Orbit App", "path": "/Applications/Orbit App.app"},
+    {"id": "com.google.Chrome", "name": "Google Chrome"}
+  ],
+  "library": {
+    "Library/LaunchAgents": [
+      {"name": "com.vendor.helperd.plist", "label": "com.vendor.helperd", "program": "/Applications/Orbit App.app/Contents/MacOS/helperd"},
+      {"name": "com.example.orbit.login.plist", "label": "com.example.orbit.login", "program": "/usr/local/bin/orbit-login", "programExists": false},
+      {"name": "com.google.keystone.agent.plist", "label": "com.google.keystone.agent", "program": "/Library/Google/GoogleSoftwareUpdate/ksagent"},
+      {"name": "com.vendor.mentions.plist", "label": "com.vendor.mentions", "program": "/usr/local/bin/orbit-thing"},
+      {"name": "com.example.orbitron.plist", "label": "com.example.orbitron", "program": "/Applications/Orbitron.app/x"}
+    ],
+    "/Library/LaunchDaemons": [
+      {"name": "com.example.orbit.daemon.plist", "label": "com.example.orbit.daemon", "program": "/Library/PrivilegedHelperTools/com.example.orbit.daemon"}
+    ],
+    "/Library/PrivilegedHelperTools": ["com.example.orbit.daemon"]
+  },
+  "expect": {
+    "tiers": {
+      "Library/LaunchAgents/com.vendor.helperd.plist": "handsOff",
+      "Library/LaunchAgents/com.example.orbit.login.plist": "handsOff",
+      "/Library/LaunchDaemons/com.example.orbit.daemon.plist": "needsAdmin",
+      "/Library/PrivilegedHelperTools/com.example.orbit.daemon": "needsAdmin"
+    },
+    "blocked": {"Library/LaunchAgents/com.vendor.helperd.plist": "listedOnly", "/Library/LaunchDaemons/com.example.orbit.daemon.plist": "needsAdmin"},
+    "absent": ["Library/LaunchAgents/com.google.keystone.agent.plist", "Library/LaunchAgents/com.vendor.mentions.plist", "Library/LaunchAgents/com.example.orbitron.plist"],
+    "installedOwned": ["Library/LaunchAgents/com.google.keystone.agent.plist"],
+    "preselected": ["/Applications/Orbit App.app"]
+  }
+}

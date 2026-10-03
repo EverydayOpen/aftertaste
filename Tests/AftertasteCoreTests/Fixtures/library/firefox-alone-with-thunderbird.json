@@ -1,0 +1,25 @@
+{
+  "name": "firefox-alone-with-thunderbird",
+  "note": "Only one Firefox is installed (the one being removed); Thunderbird stays. The Mozilla shared folders are still never offered.",
+  "kind": "app",
+  "target": "org.mozilla.firefox",
+  "apps": [
+    {"id": "org.mozilla.firefox", "name": "Firefox"},
+    {"id": "org.mozilla.thunderbird", "name": "Thunderbird"}
+  ],
+  "library": {
+    "Library/Caches": ["org.mozilla.firefox", "Mozilla", "org.mozilla.thunderbird"],
+    "Library/Preferences": ["org.mozilla.firefox.plist", "org.mozilla.thunderbird.plist"],
+    "Library/Application Support": ["Firefox", "Mozilla", "Thunderbird"]
+  },
+  "expect": {
+    "tiers": {
+      "Library/Caches/org.mozilla.firefox": "high",
+      "Library/Preferences/org.mozilla.firefox.plist": "high",
+      "Library/Application Support/Firefox": "medium"
+    },
+    "absent": ["Library/Caches/Mozilla", "Library/Application Support/Mozilla", "Library/Application Support/Thunderbird", "Library/Caches/org.mozilla.thunderbird",
+               "Library/Preferences/org.mozilla.thunderbird.plist"],
+    "installedOwned": ["Library/Caches/org.mozilla.thunderbird", "Library/Application Support/Thunderbird", "Library/Caches/Mozilla"]
+  }
+}

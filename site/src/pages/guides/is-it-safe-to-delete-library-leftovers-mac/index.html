@@ -1,0 +1,59 @@
+<!--meta {"title": "Is it safe to delete ~/Library leftovers?", "description": "Which leftovers in your Mac's Library rebuild themselves, which only reset an app, which may be your only copy, which belong to more than one app, and which to leave alone. Five kinds, with what to check first."}-->
+<article class="read prose guide">
+  <p class="eyebrow"><b>G2</b> · Guide · Checked 3 October 2026 · macOS</p>
+  <h1>Is it safe to delete ~/Library leftovers?</h1>
+
+  <div class="summary">
+    <h2>The short answer</h2>
+    <ol>
+      <li>It depends on the folder. Caches, logs and saved state come back by themselves. Preferences reset the app. Application Support and Containers can hold your own documents. Shared folders belong to more than one app.</li>
+      <li>An exact bundle-ID match in a cache, log or saved-state folder is the strongest case for moving something. A name that merely looks like the app is not.</li>
+      <li>Move items to the Trash and keep them there for a while. Do not delete, and leave Apple's files, running apps and iCloud folders alone.</li>
+    </ol>
+  </div>
+
+  <h2 id="rebuilt">Rebuilt automatically</h2>
+  <p><b>Caches, Logs, Saved Application State, HTTPStorages, WebKit.</b> These rebuild themselves, and a scan ticks them by default only when the name is the app's exact bundle ID. A cache holds copies of things the app can fetch or compute again. Saved state remembers window positions and what was open. HTTPStorages and WebKit hold cookies and local storage of web views, so the cost of losing them is signing in again.</p>
+  <p>Two exceptions to watch. A few apps keep downloads in Caches that take time to fetch again. And updater caches such as the ones Sparkle-based apps or Google's updater use are shared by several apps, so they are never ticked.</p>
+
+  <h2 id="reset">Reset, not lost</h2>
+  <p><b>Preferences, Cookies, Recent documents.</b> These are only settings, so a scan can tick them when the name is the app's exact bundle ID. A <code>.plist</code> file named with the bundle ID holds the app's settings: window choices, toggles, the last folder you used. Removing it means the app starts with defaults if you ever reinstall. Some apps keep a licence key or a sign-in there, so check before you remove the settings of an app you paid for. Quit the app first: macOS caches preferences in memory and a running app can write the file again.</p>
+
+  <h2 id="only-copy">May be your only copy</h2>
+  <p><b>Application Support, Containers, Group Containers.</b> This is where notes, recordings, databases, project files and plug-ins live. A sandboxed app from the Mac App Store keeps its whole world in a Container, often with the only copy of what you made. Open the folder and look. After the Trash is emptied, reinstalling the app will not bring that data back.</p>
+  <p>This is why Aftertaste marks these Medium: unticked, behind a per-app "Include my data" control and an acknowledgement. Anything that looks like a wallet, a vault, a backup, a virtual machine or a folder over 5 GB is Review at most and is never part of a bulk move.</p>
+
+  <h2 id="shared">Shared by several apps</h2>
+  <p><b>Vendor folders and shared Group Containers.</b> A folder named for a maker rather than an app, such as Adobe, Microsoft, Google, Mozilla or JetBrains, serves every product from that maker. Office-style suites keep one Group Container for all their apps. Firefox's stable, beta and ESR channels share one cache folder. In the Homebrew cask data, 1,187 of 19,970 distinct leftover paths (5.9 %) are listed by two or more casks. If one app is gone and another still uses the folder, removing it breaks the one that stayed.</p>
+  <p>Aftertaste treats these as Review at most while another app might need them, and as Hands off when an installed app clearly owns them.</p>
+
+  <h2 id="leave-alone">Leave these alone</h2>
+  <ul>
+    <li><b>Anything named <code>com.apple.*</code>.</b> It is Apple's, and a few belong to apps you use daily.</li>
+    <li><b>Anything whose app is running.</b> Quit the app, then look again.</li>
+    <li><b>Launch agents and daemons.</b> Removing the file does not stop a job that is already loaded, and unloading one needs commands that can break other things. Aftertaste lists these and does not remove them.</li>
+    <li><b>iCloud folders:</b> <code>~/Library/Mobile Documents</code> and CloudStorage. A move there syncs to every device signed in to the account.</li>
+    <li><b>Mail, Messages, Photos, Keychains.</b> They are not leftovers of an app you removed.</li>
+  </ul>
+
+  <h2 id="trash">Trash, not delete</h2>
+  <p>A move to the Trash can be undone and a delete cannot. Finder's Put Back may not be offered for an item that another app moved, so a tool that moves things should keep its own record of where each came from; Aftertaste's History does, and Undo never overwrites anything that is already in the place. Space comes back when you empty the Trash. A local snapshot taken before the move keeps the old copy for up to 24 hours or until space is needed, <a href="https://support.apple.com/en-us/102154">as Apple describes</a>, so emptying the Trash does not remove the data from the disk at once. <a href="/guides/can-deleted-files-be-recovered-mac-apfs-ssd-filevault/">More on that in G3</a>.</p>
+
+  <h2 id="ledger">The five tiers</h2>
+  <p>This is how Aftertaste turns the above into labels. Only High is ticked when a scan appears.</p>
+  <ul class="rules">
+    <li><h3>High</h3><p>An exact bundle-ID match in a cache, log, saved-state or settings place. Rebuilt automatically or reset.</p><code>ticked</code></li>
+    <li><h3>Medium</h3><p>Probably the app's, and may hold your data. Needs the per-app control and an acknowledgement.</p><code>unticked</code></li>
+    <li><h3>Review</h3><p>Shared or ambiguous. One item at a time, each with its own confirmation.</p><code>one by one</code></li>
+    <li><h3>Hands off</h3><p>Apple's, running, synced, protected or a launch agent. Listed with the reason.</p><code>no checkbox</code></li>
+    <li><h3>Needs admin</h3><p>Lives where an ordinary app cannot write. Reveal in Finder or copy the path.</p><code>no checkbox</code></li>
+  </ul>
+  <p class="note">{{statusShort}} Aftertaste is not affiliated with or endorsed by any app it detects; the makers named here are named only as examples of shared folders. <a href="/how-it-decides/">How it decides</a>.</p>
+
+  <h2 id="sources">Sources</h2>
+  <ul class="sources">
+    <li>Apple Support: <a href="https://support.apple.com/en-us/102610">Delete or uninstall apps on Mac</a></li>
+    <li>Apple Support: <a href="https://support.apple.com/en-us/102154">About Time Machine local snapshots</a> (hourly, kept for 24 hours; one more until space is needed)</li>
+    <li>Homebrew: <a href="https://docs.brew.sh/Cask-Cookbook">Cask Cookbook</a>, the <code>zap</code> stanza; the public <a href="https://formulae.brew.sh/api/cask.json">cask catalogue</a> (path sharing counted by us on 3 October 2026)</li>
+  </ul>
+</article>

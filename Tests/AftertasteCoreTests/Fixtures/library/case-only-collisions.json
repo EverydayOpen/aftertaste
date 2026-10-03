@@ -1,0 +1,24 @@
+{
+  "name": "case-only-collisions",
+  "note": "Two installed bundles whose IDs differ only by case are the same app on a case-insensitive volume: every ID-keyed folder is shared with the copy that stays.",
+  "kind": "app",
+  "target": "com.example.Notes",
+  "apps": [
+    {"id": "com.example.Notes", "name": "Notes Pro", "path": "/Applications/Notes Pro.app"},
+    {"id": "com.example.notes", "name": "Notes Pro Old", "path": "/Applications/Notes Pro Old.app"}
+  ],
+  "library": {
+    "Library/Caches": ["com.example.notes", "COM.EXAMPLE.NOTES"],
+    "Library/Preferences": ["com.example.Notes.plist"],
+    "Library/Application Support": ["Notes Pro"]
+  },
+  "expect": {
+    "tiers": {
+      "Library/Caches/com.example.notes": "handsOff",
+      "Library/Caches/COM.EXAMPLE.NOTES": "handsOff",
+      "Library/Preferences/com.example.Notes.plist": "handsOff",
+      "Library/Application Support/Notes Pro": "handsOff"
+    },
+    "installedOwned": ["Library/Caches/com.example.notes", "Library/Caches/COM.EXAMPLE.NOTES", "Library/Preferences/com.example.Notes.plist", "Library/Application Support/Notes Pro"]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "same-team-group-container",
+  "note": "A Group Container named by the developer Team ID is shared with every installed app of that team. Only a group the removed app lists itself is its own, and even that is Review.",
+  "kind": "app",
+  "target": "com.vendor.alpha",
+  "apps": [
+    {"id": "com.vendor.alpha", "name": "Alpha Studio", "team": "VENDORTEAM", "groups": ["group.com.vendor.alpha"]},
+    {"id": "com.vendor.beta", "name": "Beta Studio", "team": "VENDORTEAM", "groups": ["VENDORTEAM.shared"]}
+  ],
+  "library": {
+    "Library/Group Containers": ["VENDORTEAM.shared", "VENDORTEAM.alpha-only", "group.com.vendor.alpha", "group.com.vendor.beta", "OTHERTEAM1.shared"],
+    "Library/Caches": ["com.vendor.alpha", "com.vendor.beta"]
+  },
+  "sizes": {
+    "Library/Group Containers/VENDORTEAM.shared": 1000,
+    "Library/Group Containers/VENDORTEAM.alpha-only": 1000,
+    "Library/Group Containers/group.com.vendor.alpha": 1000,
+    "Library/Group Containers/group.com.vendor.beta": 1000,
+    "Library/Group Containers/OTHERTEAM1.shared": 1000
+  },
+  "expect": {
+    "tiers": {
+      "Library/Group Containers/VENDORTEAM.shared": "handsOff",
+      "Library/Group Containers/VENDORTEAM.alpha-only": "handsOff",
+      "Library/Group Containers/group.com.vendor.alpha": "low",
+      "Library/Caches/com.vendor.alpha": "high"
+    },
+    "blocked": {"Library/Group Containers/VENDORTEAM.shared": "sharedWithInstalled", "Library/Group Containers/VENDORTEAM.alpha-only": "sharedWithInstalled"},
+    "absent": ["Library/Group Containers/group.com.vendor.beta", "Library/Group Containers/OTHERTEAM1.shared", "Library/Caches/com.vendor.beta"],
+    "installedOwned": ["Library/Group Containers/VENDORTEAM.shared", "Library/Group Containers/VENDORTEAM.alpha-only", "Library/Group Containers/group.com.vendor.beta"]
+  }
+}

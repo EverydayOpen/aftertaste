@@ -1,0 +1,30 @@
+# {{name}}
+
+> {{tagline}}
+
+{{name}} is a free, open-source Mac app (MIT License; macOS {{minMacOS}} or later, Apple silicon and Intel). It finds what an app you removed left behind (caches, preferences, containers, saved state, launch items), shows why each item belongs to it with a confidence tier, moves the items you choose to the Trash so you can undo, and produces a Trace Report: a card of measured numbers. It is not affiliated with or endorsed by any app it detects.
+
+Status: {{statusShort}} {{statusNote}}
+
+Trust box
+- It reads folder and file names and sizes in your Library, never file contents. It never requires Full Disk Access: when macOS blocks a folder it says so and offers an optional Settings shortcut, and it works without it. It makes no network connections.
+- Two verbs only: Move to Trash and Undo. It never deletes, overwrites or empties the Trash. Every move is written to a local journal first; if that fails, nothing moves.
+- Only High items are ticked: an exact bundle ID match in a place that rebuilds itself or holds only settings. Medium may hold your data and needs an extra switch. Review is shared or ambiguous and moves one item at a time. Hands off and Needs admin are listed with the reason and never moved. Launch agents and privileged helpers are listed, not removed.
+- Every report says where it could not look ("{{coverageSample}}") and what no app can erase: snapshots, backups, iCloud copies, system logs, keychain items, login-item records.
+- The Erase readiness page reads FileVault, the disk type and the local snapshot count, read-only, and points to Apple's Erase All Content and Settings.
+
+It will never say: securely erased, unrecoverable, forensic-proof, military grade, shredded, wiped, guaranteed, certified, compliant, "clean your Mac". (no-claim-ok: this line lists claims the app and site never make; CI enforces it)
+
+- Download: {{baseURL}}/download/
+- Source and support: https://github.com/{{releasesRepo}}
+- Report a wrong match: {{wrongMatchURL}}
+
+## Pages
+
+{{pageList}}
+
+## Feeds
+
+- [Changelog RSS]({{baseURL}}/feed.xml)
+
+{{name}} is not affiliated with or endorsed by any app it detects. App names appear only to say what {{name}} looks for.

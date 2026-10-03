@@ -1,0 +1,27 @@
+{
+  "name": "vscode-code-folder",
+  "note": "VS Code writes Code and the Insiders build writes Code - Insiders. A per-product rule, not the display name, maps each folder to exactly one of them.",
+  "kind": "app",
+  "target": "com.microsoft.VSCode",
+  "apps": [
+    {"id": "com.microsoft.VSCode", "name": "Visual Studio Code"},
+    {"id": "com.microsoft.VSCodeInsiders", "name": "Visual Studio Code - Insiders"}
+  ],
+  "library": {
+    "Library/Application Support": ["Code", "Code - Insiders"],
+    "Library/Caches": ["com.microsoft.VSCode", "com.microsoft.VSCodeInsiders", "com.microsoft.VSCode.ShipIt", "com.microsoft.VSCodeInsiders.ShipIt"],
+    "Library/Preferences": ["com.microsoft.VSCode.plist", "com.microsoft.VSCodeInsiders.plist"],
+    "Library/Saved Application State": ["com.microsoft.VSCode.savedState", "com.microsoft.VSCodeInsiders.savedState"]
+  },
+  "expect": {
+    "tiers": {
+      "Library/Application Support/Code": "medium",
+      "Library/Caches/com.microsoft.VSCode": "high",
+      "Library/Caches/com.microsoft.VSCode.ShipIt": "high",
+      "Library/Preferences/com.microsoft.VSCode.plist": "high"
+    },
+    "absent": ["Library/Application Support/Code - Insiders", "Library/Caches/com.microsoft.VSCodeInsiders", "Library/Caches/com.microsoft.VSCodeInsiders.ShipIt",
+               "Library/Preferences/com.microsoft.VSCodeInsiders.plist", "Library/Saved Application State/com.microsoft.VSCodeInsiders.savedState"],
+    "installedOwned": ["Library/Application Support/Code - Insiders", "Library/Caches/com.microsoft.VSCodeInsiders", "Library/Preferences/com.microsoft.VSCodeInsiders.plist"]
+  }
+}

@@ -1,0 +1,69 @@
+<!--meta {"title": "Can deleted files be recovered on a Mac? (APFS, SSD, FileVault)", "description": "What emptying the Trash does on a Mac, what snapshots, Time Machine and iCloud keep, why overwriting a file does not do what it sounds like on flash storage, and what encryption changes. With sources."}-->
+<article class="read prose guide">
+  <p class="eyebrow"><b>G3</b> · Guide · Checked 3 October 2026 · macOS</p>
+  <h1>Can deleted files be recovered on a Mac? (APFS, SSD, FileVault)</h1>
+
+  <div class="summary">
+    <h2>The short answer</h2>
+    <ol>
+      <li>Emptying the Trash makes a file's space reusable, nothing more. The file's old blocks stay on the disk until the space is used again.</li>
+      <li>On an Apple silicon or T2 Mac, those blocks are ciphertext to anyone without the keys, even with FileVault off. Copies in local snapshots, Time Machine backups and iCloud are separate and are not touched by emptying the Trash.</li>
+      <li>Overwriting a file does not reliably reach every copy on flash storage. The strongest erase Apple offers is destroying the encryption key with Erase All Content and Settings.</li>
+    </ol>
+  </div>
+
+  <h2 id="trash">What the Trash and Empty Trash do</h2>
+  <p>Moving a file to the Trash only moves it to another folder. Emptying the Trash removes the file's entry and marks its space as free. Nothing is written over the old contents, and TRIM, the message that tells an SSD a block is free, is a performance hint rather than an erase: Wei and colleagues note it has no reliable effect on data security. Whether anyone can read the old blocks then depends on the disk, on encryption and on whether another copy exists.</p>
+
+  <h2 id="snapshots">Snapshots and Time Machine</h2>
+  <p><a href="https://support.apple.com/en-us/102154">Apple describes local snapshots</a>: Time Machine saves one of your startup disk about every hour and keeps it for 24 hours, keeps another of your last successful backup until space is needed, and saves one before a macOS update. They live on the same disk as the original files. A snapshot is read-only, and all the original file data at the time it was taken is retained, so a file that existed then can still be read from it after you delete it (<a href="https://eclecticlight.co/2026/01/31/explainer-snapshots-2/">Eclectic Light, 31 January 2026</a>). An external Time Machine disk is a second full copy of your files. To clear local snapshots by hand, Apple's way is to set Time Machine to back up manually for a few minutes, which removes snapshots as a whole rather than one file at a time.</p>
+
+  <h2 id="icloud">iCloud</h2>
+  <p>A file in iCloud Drive is deleted on your other devices when they sync. On iCloud.com, <a href="https://support.apple.com/guide/icloud/recover-deleted-files-mmae56ea1ca5/icloud">Apple says you can recover files deleted from iCloud Drive within the last 30 days</a>. Backups of those devices are separate copies again. Overwriting a synced file can sync the changed file everywhere, which is one reason Aftertaste never touches iCloud folders.</p>
+
+  <h2 id="overwrite">Why overwriting does not do what it says on a Mac</h2>
+  <ul>
+    <li><b>NIST.</b> The 2025 revision of SP 800-88 says that for flash storage with spare cells, overwriting "should be avoided" because very little protection is achieved, and it treats cryptographic erase, which means destroying the key, as the method that works. It is about whole media, not single files, and it says multiple passes are not needed.</li>
+    <li><b>Measurements.</b> In a 2011 study (Wei et al., FAST), overwriting a single file left between 4 % and 75 % of its contents on SATA SSDs and up to 84.9 % on USB drives. Those drives were from 2011, not today's Apple silicon storage, but the reason is the same: the controller decides where data physically goes.</li>
+    <li><b>Apple's own history.</b> Apple removed the Secure Empty Trash option in OS X 10.11, and its security note (CVE-2015-5901) says it could not do its job on systems such as those with flash storage. The <code>srm</code> command is no longer shipped. The <code>diskutil secureErase</code> man page says modern devices have wear-leveling, block-sparing and possibly persistent cache hardware that these commands cannot completely erase, and points to encryption instead. Overwriting free space is reported to be refused on APFS volumes.</li>
+    <li><b>Snapshots.</b> If a snapshot holds the file, an overwrite writes new data elsewhere and the old blocks stay referenced.</li>
+  </ul>
+  <p>Programs that advertise military-grade overwriting are selling a hard-disk technique that flash storage does not honour. <!-- no-claim-ok: names the marketing claim to explain why we do not make it --></p>
+
+  <h2 id="encryption">What encryption changes</h2>
+  <p>Every APFS volume on an Apple silicon or T2 Mac has a volume encryption key. With FileVault off, <a href="https://support.apple.com/guide/security/volume-encryption-with-filevault-sec4c6dc1b6e/web">that key is protected only by a hardware key in the Secure Enclave</a>; with FileVault on, it also depends on your login password. Either way, someone holding only the storage chips gets ciphertext. Someone who can log in to your running Mac, or who knows your password, reads your current files through the system as you do.</p>
+  <p>Erase All Content and Settings (Monterey 12 and later, on Apple silicon or T2 Macs) <a href="https://eclecticlight.co/2025/11/12/erase-all-content-and-settings-does-what-it-says/">destroys the Data volume's key</a> rather than overwriting blocks, which is why it is quick and why it is the strongest erase Apple offers. <a href="https://support.apple.com/guide/mac-help/erase-your-mac-and-reset-it-to-factory-settings-mchl7676b710/mac">Apple's steps are here</a>. An Intel Mac without a T2 chip has no hardware encryption of the internal disk, so FileVault is the thing to turn on. There is no way for an app to destroy the key for one file on a Mac: the available granularities are the volume, the Data volume, or a disk you re-format.</p>
+
+  <h2 id="table">The honest table</h2>
+  <p>Who could read old data after you delete a file, in plain sentences. "Old data" means a file you moved to the Trash and emptied.</p>
+  <ul class="rules plain">
+    <li><h3>Apple silicon, FileVault on</h3><p>Reading the disk without your password or recovery key gives ciphertext. Snapshots and Time Machine copies are readable once the Mac is unlocked. The real erase is Erase All Content and Settings.</p></li>
+    <li><h3>Apple silicon, FileVault off</h3><p>The volume is still encrypted, but the key is tied to the Mac, not to a password. A thief without a login cannot read the chips. Anyone who can log in sees the live volume and any snapshot.</p></li>
+    <li><h3>Intel Mac without a T2 chip</h3><p>No encryption at rest. On an SSD, deleted data can remain in flash until the drive reuses it, and overwriting misses copies the controller moved. Turn FileVault on.</p></li>
+    <li><h3>External hard disk</h3><p>Deleted data stays in place until reused, and file names can linger in the file system's records. One overwrite pass of a file can reach its own blocks here, but not snapshots or backups.</p></li>
+    <li><h3>External SSD or USB stick</h3><p>No hardware encryption unless the disk is formatted as encrypted APFS or encrypts itself. Overwriting is unreliable. Format as encrypted APFS, so that a later erase is a key change.</p></li>
+    <li><h3>Files synced with iCloud</h3><p>Deleting a file removes it from your devices after sync. iCloud.com keeps it for 30 days. Backups keep what they had.</p></li>
+  </ul>
+
+  <h2 id="todo">What to do</h2>
+  <ol class="rules">
+    <li><h3>Turn FileVault on</h3><p>It ties the key to your password. On an Intel Mac without a T2 chip it is the only encryption you get.</p><code>FileVault</code></li>
+    <li><h3>Before you sell or pass on a Mac, erase it</h3><p>Use Erase All Content and Settings where your Mac offers it. Back up what you want first: the erase cannot be reversed.</p><code>EACAS</code></li>
+    <li><h3>Format external disks as encrypted APFS</h3><p>A later erase of such a disk is a key change, which is reliable on flash.</p><code>APFS (Encrypted)</code></li>
+    <li><h3>Keep the backups you mean to keep</h3><p>And know that they hold old copies of what you delete.</p><code>backups</code></li>
+  </ol>
+
+  <h2 id="aftertaste">What Aftertaste does here</h2>
+  <p>It moves files to the Trash and never claims more. Its Erase readiness page reads three facts, read-only: whether FileVault is on, whether the disk is flash or spinning, and how many local snapshots exist. It says them in plain words, lists what it cannot reach (the unified log, file-system event records, snapshots, backups, iCloud copies, keychain items, login-item records) and points to Apple's Erase All Content and Settings. It does not overwrite anything in version 1 and does not fill free space. <!-- no-claim-ok: lists words the app never uses -->It never calls a result "unrecoverable" or "secure erase", because it could not back the words up, and a check in CI fails the build if they appear.</p>
+  <p class="note">{{statusShort}} Aftertaste is not affiliated with or endorsed by any app it detects. <a href="/what-it-reads/">What it reads and what it never does</a>.</p>
+
+  <h2 id="sources">Sources</h2>
+  <ul class="sources">
+    <li>NIST: <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-88r2.pdf">SP 800-88 Rev. 2, Guidelines for Media Sanitization</a> (September 2025; replaces Rev. 1)</li>
+    <li>Wei, Grupp, Spada, Swanson: <a href="https://www.usenix.org/legacy/event/fast11/tech/full_papers/Wei.pdf">Reliably Erasing Data From Flash-Based Solid State Drives</a>, FAST 2011</li>
+    <li>Apple: <a href="https://support.apple.com/guide/security/volume-encryption-with-filevault-sec4c6dc1b6e/web">Volume encryption with FileVault</a>, Apple Platform Security Guide; <a href="https://support.apple.com/guide/security/the-secure-enclave-sec59b0b31ff/web">The Secure Enclave</a></li>
+    <li>Apple: <a href="https://support.apple.com/en-us/103562">Security content of OS X El Capitan 10.11</a> (CVE-2015-5901, Finder); <a href="https://support.apple.com/en-us/102154">About Time Machine local snapshots</a>; <a href="https://support.apple.com/guide/mac-help/erase-your-mac-and-reset-it-to-factory-settings-mchl7676b710/mac">Erase your Mac</a>; <a href="https://support.apple.com/guide/icloud/recover-deleted-files-mmae56ea1ca5/icloud">Recover deleted files on iCloud.com</a></li>
+    <li>Eclectic Light: <a href="https://eclecticlight.co/2026/01/31/explainer-snapshots-2/">Explainer: snapshots</a> (31 January 2026); <a href="https://eclecticlight.co/2025/11/12/erase-all-content-and-settings-does-what-it-says/">Erase All Content and Settings does what it says</a> (12 November 2025)</li>
+    <li>Michael Tsai: <a href="https://mjtsai.com/blog/2019/02/06/secure-erase-and-mojaves-disk-utility/">Secure Erase and Mojave's Disk Utility</a>, quoting the <code>diskutil</code> man page; Apple Developer Forums: <a href="https://developer.apple.com/forums/thread/60430">srm command is missing</a> <!-- no-claim-ok: the title of a cited article --></li>
+  </ul>
+</article>

@@ -1,0 +1,33 @@
+{
+  "name": "firefox-beta-and-thunderbird",
+  "note": "Firefox and Firefox Beta share one bundle ID and one set of folders; Thunderbird shares the Mozilla vendor folders. Removing one Firefox must leave every shared folder alone.",
+  "kind": "app",
+  "target": "org.mozilla.firefox",
+  "apps": [
+    {"id": "org.mozilla.firefox", "name": "Firefox", "path": "/Applications/Firefox.app"},
+    {"id": "org.mozilla.firefox", "name": "Firefox Beta", "path": "/Applications/Firefox Beta.app"},
+    {"id": "org.mozilla.thunderbird", "name": "Thunderbird"}
+  ],
+  "library": {
+    "Library/Caches": ["org.mozilla.firefox", "Mozilla", "Firefox", "org.mozilla.thunderbird"],
+    "Library/Preferences": ["org.mozilla.firefox.plist", "org.mozilla.thunderbird.plist"],
+    "Library/Saved Application State": ["org.mozilla.firefox.savedState", "org.mozilla.thunderbird.savedState"],
+    "Library/Application Support": ["Firefox", "Mozilla", "Thunderbird"],
+    "Library/Logs": ["Firefox"]
+  },
+  "expect": {
+    "tiers": {
+      "/Applications/Firefox.app": "high",
+      "Library/Caches/org.mozilla.firefox": "handsOff",
+      "Library/Preferences/org.mozilla.firefox.plist": "handsOff",
+      "Library/Saved Application State/org.mozilla.firefox.savedState": "handsOff",
+      "Library/Application Support/Firefox": "handsOff",
+      "Library/Logs/Firefox": "handsOff"
+    },
+    "blocked": {"Library/Caches/org.mozilla.firefox": "siblingInstalled", "Library/Application Support/Firefox": "siblingInstalled"},
+    "absent": ["Library/Caches/Firefox", "Library/Caches/Mozilla", "Library/Application Support/Mozilla", "Library/Application Support/Thunderbird", "Library/Caches/org.mozilla.thunderbird",
+               "Library/Preferences/org.mozilla.thunderbird.plist", "Library/Saved Application State/org.mozilla.thunderbird.savedState"],
+    "installedOwned": ["Library/Caches/org.mozilla.firefox", "Library/Caches/Firefox", "Library/Preferences/org.mozilla.firefox.plist",
+                       "Library/Saved Application State/org.mozilla.firefox.savedState", "Library/Application Support/Firefox", "Library/Logs/Firefox"]
+  }
+}

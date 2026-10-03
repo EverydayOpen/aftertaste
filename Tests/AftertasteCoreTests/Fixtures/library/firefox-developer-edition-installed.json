@@ -1,0 +1,24 @@
+{
+  "name": "firefox-developer-edition-installed",
+  "note": "Firefox is being removed while Firefox Developer Edition and Firefox Nightly stay. All Firefox channels keep their profiles in Application Support/Firefox, so that folder is never offered.",
+  "kind": "app",
+  "target": "org.mozilla.firefox",
+  "apps": [
+    {"id": "org.mozilla.firefox", "name": "Firefox"},
+    {"id": "org.mozilla.firefoxdeveloperedition", "name": "Firefox Developer Edition", "path": "/Applications/Firefox Developer Edition.app"},
+    {"id": "org.mozilla.nightly", "name": "Firefox Nightly", "path": "/Applications/Firefox Nightly.app"}
+  ],
+  "library": {
+    "Library/Caches": ["org.mozilla.firefox", "Firefox", "org.mozilla.firefoxdeveloperedition", "org.mozilla.nightly"],
+    "Library/Preferences": ["org.mozilla.firefox.plist", "org.mozilla.firefoxdeveloperedition.plist", "org.mozilla.nightly.plist"],
+    "Library/Application Support": ["Firefox", "Mozilla"]
+  },
+  "expect": {
+    "tiers": {
+      "/Applications/Firefox.app": "high"
+    },
+    "absent": ["Library/Caches/org.mozilla.firefoxdeveloperedition", "Library/Caches/org.mozilla.nightly", "Library/Preferences/org.mozilla.firefoxdeveloperedition.plist",
+               "Library/Preferences/org.mozilla.nightly.plist", "Library/Application Support/Mozilla"],
+    "installedOwned": ["Library/Application Support/Firefox", "Library/Caches/Firefox", "Library/Caches/org.mozilla.firefoxdeveloperedition", "Library/Caches/org.mozilla.nightly"]
+  }
+}

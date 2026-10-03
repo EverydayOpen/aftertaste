@@ -1,0 +1,31 @@
+{
+  "name": "vendor-roots-google-android",
+  "note": "Chrome and Android File Transfer both live under vendor-named folders. Removing Chrome must not take the Google folder or the Android one.",
+  "kind": "app",
+  "target": "com.google.Chrome",
+  "apps": [
+    {"id": "com.google.Chrome", "name": "Google Chrome", "team": "EQHXZ8M8AV"},
+    {"id": "com.google.android.mtpviewer", "name": "Android File Transfer", "team": "EQHXZ8M8AV"},
+    {"id": "com.google.GoogleDrive", "name": "Google Drive", "team": "EQHXZ8M8AV"}
+  ],
+  "library": {
+    "Library/Application Support": ["Google", "Android File Transfer", "Google Chrome", "Chrome"],
+    "Library/Caches": ["com.google.Chrome", "com.google.Keystone", "com.google.SoftwareUpdate", "Google", "com.google.android.mtpviewer"],
+    "Library/Preferences": ["com.google.Chrome.plist", "com.google.Keystone.Agent.plist", "com.google.android.mtpviewer.plist"],
+    "Library/Group Containers": ["EQHXZ8M8AV.group.com.google.drive"]
+  },
+  "sizes": {"Library/Group Containers/EQHXZ8M8AV.group.com.google.drive": 1000},
+  "expect": {
+    "tiers": {
+      "Library/Caches/com.google.Chrome": "high",
+      "Library/Preferences/com.google.Chrome.plist": "high",
+      "Library/Application Support/Google Chrome": "low",
+      "Library/Group Containers/EQHXZ8M8AV.group.com.google.drive": "handsOff"
+    },
+    "absent": ["Library/Application Support/Google", "Library/Application Support/Android File Transfer", "Library/Application Support/Chrome",
+               "Library/Caches/com.google.Keystone", "Library/Caches/com.google.SoftwareUpdate", "Library/Caches/Google", "Library/Caches/com.google.android.mtpviewer",
+               "Library/Preferences/com.google.Keystone.Agent.plist", "Library/Preferences/com.google.android.mtpviewer.plist"],
+    "installedOwned": ["Library/Application Support/Google", "Library/Application Support/Android File Transfer", "Library/Caches/com.google.android.mtpviewer",
+                       "Library/Group Containers/EQHXZ8M8AV.group.com.google.drive", "Library/Caches/com.google.Keystone"]
+  }
+}

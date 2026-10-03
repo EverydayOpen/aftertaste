@@ -1,0 +1,33 @@
+{
+  "name": "xcode-and-xcode-beta",
+  "note": "Xcode and Xcode-beta share the ID com.apple.dt.Xcode (the Apple allow-list lets Xcode be uninstalled at all).",
+  "kind": "app",
+  "target": "com.apple.dt.Xcode",
+  "apps": [
+    {"id": "com.apple.dt.Xcode", "name": "Xcode", "path": "/Applications/Xcode.app"},
+    {"id": "com.apple.dt.Xcode", "name": "Xcode-beta", "path": "/Applications/Xcode-beta.app"}
+  ],
+  "library": {
+    "Library/Caches": ["com.apple.dt.Xcode", "com.apple.dt.Xcode.ShipIt"],
+    "Library/Preferences": ["com.apple.dt.Xcode.plist"],
+    "Library/Saved Application State": ["com.apple.dt.Xcode.savedState"],
+    "Library/Application Support": ["Xcode", "com.apple.dt.Xcode"],
+    "Library/Logs": ["Xcode"]
+  },
+  "expect": {
+    "tiers": {
+      "/Applications/Xcode.app": "high",
+      "Library/Caches/com.apple.dt.Xcode": "handsOff",
+      "Library/Caches/com.apple.dt.Xcode.ShipIt": "handsOff",
+      "Library/Preferences/com.apple.dt.Xcode.plist": "handsOff",
+      "Library/Saved Application State/com.apple.dt.Xcode.savedState": "handsOff",
+      "Library/Application Support/com.apple.dt.Xcode": "handsOff",
+      "Library/Application Support/Xcode": "handsOff",
+      "Library/Logs/Xcode": "handsOff"
+    },
+    "blocked": {"Library/Caches/com.apple.dt.Xcode": "siblingInstalled"},
+    "installedOwned": ["Library/Caches/com.apple.dt.Xcode", "Library/Caches/com.apple.dt.Xcode.ShipIt", "Library/Preferences/com.apple.dt.Xcode.plist",
+                       "Library/Saved Application State/com.apple.dt.Xcode.savedState", "Library/Application Support/com.apple.dt.Xcode",
+                       "Library/Application Support/Xcode", "Library/Logs/Xcode"]
+  }
+}

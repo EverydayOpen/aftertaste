@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- handwritten; keys are VERIFY until the probe workflow records the real output -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>FilesystemName</key>
+	<string>APFS</string>
+	<key>FilesystemType</key>
+	<string>apfs</string>
+	<key>Internal</key>
+	<true/>
+	<key>SolidState</key>
+	<true/>
+</dict>
+</plist>

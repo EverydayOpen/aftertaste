@@ -1,0 +1,27 @@
+{
+  "name": "common-word-names",
+  "note": "An app called Notes (or Music) must not match the folders everybody has under that word. Only its ID-keyed files are found.",
+  "kind": "app",
+  "target": "com.example.notes",
+  "apps": [
+    {"id": "com.example.notes", "name": "Notes", "exec": "Notes"},
+    {"id": "com.example.musicbox", "name": "Music", "exec": "Music"}
+  ],
+  "library": {
+    "Library/Application Support": ["Notes", "Music", "com.example.notes"],
+    "Library/Logs": ["Notes"],
+    "Library/Logs/DiagnosticReports": ["Notes_2026-10-01-101010_jane.ips"],
+    "Library/Caches": ["com.example.notes", "com.apple.Notes", "Music"],
+    "Library/Containers": ["com.apple.Notes"]
+  },
+  "expect": {
+    "tiers": {
+      "Library/Caches/com.example.notes": "high",
+      "Library/Application Support/com.example.notes": "medium"
+    },
+    "absent": ["Library/Application Support/Notes", "Library/Application Support/Music", "Library/Logs/Notes",
+               "Library/Logs/DiagnosticReports/Notes_2026-10-01-101010_jane.ips", "Library/Caches/com.apple.Notes", "Library/Caches/Music",
+               "Library/Containers/com.apple.Notes"],
+    "installedOwned": ["Library/Application Support/Notes", "Library/Application Support/Music", "Library/Logs/Notes", "Library/Containers/com.apple.Notes"]
+  }
+}

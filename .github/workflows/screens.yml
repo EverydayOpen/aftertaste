@@ -1,0 +1,269 @@
+# Window captures of every screen, light and dark, as the `screens` artifact (<screen>-<look>.png), and the README hero's
+# frames as the `hero-frames` artifact. A Debug build opens each screen with `-demoScreen <name>` (App/Demo.swift): a
+# synthetic Mac built in Core (DemoBackend, fictional apps), so nothing real is read or moved. Nothing is committed or
+# published from here; the lead picks what goes into site/static/shots/ and the README.
+#
+# Aftertaste is a window app: the main window opens at launch, so every capture is a plain window capture (no menu bar item
+# is involved). Every PNG is checked in the "Verify captures" step before the artifact is uploaded.
+name: screens
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["App/**", "Sources/**", ".github/workflows/screens.yml"]
+
+permissions:
+  contents: read
+
+env:
+  APP: Aftertaste
+  XCODEGEN: "2.46.0"   # checksum-pinned, same pin as ci.yml, beta.yml, release.yml and codeql.yml: bump all together
+  XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  capture:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app && xcodebuild -version
+
+      - name: Generate project (XcodeGen, checksum-pinned)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          test -d "$RUNNER_TEMP/xcodegen/share/xcodegen/SettingPresets"   # without them xcodegen only prints a warning
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate
+
+      # Demo mode exists only with DEBUG, set explicitly so a preset change can't turn every capture into the real app.
+      # Ad-hoc signed like beta.yml, this runner's arch only.
+      - name: Build (Debug)
+        run: |
+          xcodebuild -project Aftertaste.xcodeproj -scheme Aftertaste -configuration Debug \
+            -destination 'platform=macOS,arch=arm64' -derivedDataPath build/dd \
+            SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" ENABLE_HARDENED_RUNTIME=NO build
+
+      # `open` launches and activates the app, so windows are captured active. The window number and bounds come from the
+      # window server by owner name (no Screen Recording needed for that). The widest window no wider than <max> wins, so a
+      # sheet (its own, smaller window) never beats the window it hangs from.
+      - name: Capture helpers
+        run: |
+          cat > "$RUNNER_TEMP/window.swift" <<'EOF'
+          import CoreGraphics
+          CGWarpMouseCursorPosition(.zero)   // pointer out of the window: no hover state in a capture
+          let arguments = CommandLine.arguments
+          let widest = arguments.count > 2 ? Double(arguments[2]) ?? .infinity : .infinity
+          let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+          var best: (id: Int, rect: CGRect)?
+          for window in windows where window[kCGWindowOwnerName as String] as? String == arguments[1] && window[kCGWindowLayer as String] as? Int == 0 {
+              guard let bounds = window[kCGWindowBounds as String], let rect = CGRect(dictionaryRepresentation: bounds as! CFDictionary),
+                    rect.width <= widest, rect.width * rect.height > (best.map { $0.rect.width * $0.rect.height } ?? 0) else { continue }
+              best = (window[kCGWindowNumber as String] as? Int ?? 0, rect)
+          }
+          if let best { print(best.id, Int(best.rect.minX), Int(best.rect.minY), Int(best.rect.width), Int(best.rect.height)) }
+          EOF
+          xcrun swiftc "$RUNNER_TEMP/window.swift" -o "$RUNNER_TEMP/window"
+          cat > "$RUNNER_TEMP/lib.sh" <<'EOF'
+          app="build/dd/Build/Products/Debug/$APP.app"
+          win="$RUNNER_TEMP/window"
+          # launch <screen> <look> [scenario] [scroll 0..1]
+          launch() {
+            local args=(-demoScreen "$1" -demoAppearance "$2")
+            if [ -n "${3:-}" ]; then args+=(-demoScenario "$3"); fi
+            if [ -n "${4:-}" ]; then args+=(-demoScroll "$4"); fi
+            open -n "$app" --args "${args[@]}"
+          }
+          # find_window <max width>: waits up to 30 s, sets $info to "id x y w h"
+          find_window() {
+            info=""
+            for _ in $(seq 60); do info=$("$win" "$APP" "$1"); [ -n "$info" ] && return 0; sleep 0.5; done
+            return 1
+          }
+          quit() {
+            pkill -x "$APP" || true
+            while pgrep -x "$APP" > /dev/null; do sleep 0.2; done
+          }
+          EOF
+          # name|screen|scenario (empty: the screen's default)|max window width|also capture the screen rect (sheets)|scroll
+          # (empty, or 0..1: how far down the main window's widest scrollable area is scrolled before the capture; the end of
+          # the preview list and the older history runs are below the fold otherwise)
+          # The Trace Report card itself is rendered by the app (-demoCardOut) in the hero step, not captured here.
+          cat > "$RUNNER_TEMP/screens.list" <<'EOF'
+          picker|picker||99999|0
+          firstRun|firstRun||99999|1
+          uninstall|uninstall||99999|0
+          results|results||99999|0
+          resultsEnd|results||99999|0|1
+          maybeOnly|results|maybe-only|99999|0
+          blocked|blocked||99999|0
+          adminRows|results|admin-rows|99999|0
+          quiet|quiet||99999|0
+          confirm|confirm||99999|1
+          running|running||99999|1
+          trashed|trashed||99999|1
+          undo|undo||99999|0
+          activity|activity||99999|0
+          activityEnd|activity||99999|0|1
+          report|report||99999|1
+          readiness|readiness||99999|0
+          readinessCalm|readiness|leftovers|99999|0
+          about|about||99999|0
+          preferences|preferences||99999|1
+          EOF
+
+      - name: Capture screens
+        run: |
+          source "$RUNNER_TEMP/lib.sh"
+          mkdir -p screens
+          # No mouse or trackpad on the runner, so macOS shows always-on legacy scroll bars. Each screen is a fresh
+          # launch, which reads the global domain.
+          defaults write -g AppleShowScrollBars -string WhenScrolling
+          for look in light dark; do
+            while IFS='|' read -r -u 3 name screen scenario max region scroll; do   # empty fields stay empty: '|' is not whitespace
+              launch "$screen" "$look" "$scenario" "$scroll"
+              if ! find_window "$max"; then
+                screencapture -x "screens/no-window-$name.png"
+                echo "::error::No $APP window for $name ($look) within 30 s"
+                exit 1
+              fi
+              set -- $info
+              sleep 7   # scan, the move and the undo of the longest flows, entrance animations, the scroll passes (3, 4 and 5 s after launch)
+              screencapture -x -l"$1" "screens/$name-$look.png"
+              if [ "$region" = 1 ]; then
+                # A sheet may not be part of a single-window capture (VERIFY): the window's screen rect has it.
+                set -- $("$win" "$APP" "$max")
+                screencapture -x -R "$2,$3,$4,$5" "screens/$name-$look-region.png"
+              fi
+              quit
+            done 3< "$RUNNER_TEMP/screens.list"   # fd 3: open, screencapture and the rest never read the list
+          done
+          ls -l screens
+
+      # A blank, missing or truncated PNG would still upload as a green run. Every expected file must exist, be a PNG of a
+      # plausible size and not be (nearly) empty (a blank window compresses to a few KB), and a screen must differ between
+      # light and dark (the -demoAppearance argument took effect).
+      - name: Verify captures
+        run: |
+          python3 - "$RUNNER_TEMP/screens.list" screens <<'PY'
+          import os, struct, sys
+          rows = [l.strip().split("|") for l in open(sys.argv[1]) if l.strip()]
+          out, bad = sys.argv[2], []
+          def check(path):
+              if not os.path.isfile(path): return "missing"
+              size = os.path.getsize(path)
+              with open(path, "rb") as f: head = f.read(24)
+              if head[:8] != b"\x89PNG\r\n\x1a\n": return "not a PNG"
+              w, h = struct.unpack(">II", head[16:24])
+              if w < 300 or h < 200: return "too small (%dx%d)" % (w, h)
+              if size < 12000: return "only %d bytes, probably blank" % size
+              return None
+          for r in rows:
+              name, region = r[0], r[4] == "1"
+              for look in ("light", "dark"):
+                  files = ["%s/%s-%s.png" % (out, name, look)] + (["%s/%s-%s-region.png" % (out, name, look)] if region else [])
+                  for p in files:
+                      why = check(p)
+                      if why: bad.append("%s: %s" % (p, why))
+              a, b = ("%s/%s-%s.png" % (out, name, l) for l in ("light", "dark"))
+              if os.path.isfile(a) and os.path.isfile(b) and open(a, "rb").read() == open(b, "rb").read():
+                  bad.append("%s: light and dark are identical" % name)
+          for line in bad: print("::error::" + line)
+          print("%d screens, %d problems" % (len(rows), len(bad)))
+          sys.exit(1 if bad else 0)
+          PY
+
+      # The README hero: the preview, the confirm sheet, a Move with the rows leaving one by one (the outline fading), the
+      # result, and the Trace Report card. The move is a burst of screen-rect captures of the real window while `hero` runs
+      # (idle, Move, a 4 s run, the result), timestamped, so the frames are real animation, not a re-enactment. In `hero` the
+      # app starts the move itself and keeps the confirm and moving sheets invisible (App/Demo.swift). screencapture costs
+      # 100-250 ms per call (VERIFY), so up to three run at once, each stamped when it starts; frames.ffconcat carries each
+      # frame's real duration.
+      - name: Hero frames
+        run: |
+          source "$RUNNER_TEMP/lib.sh"
+          mkdir -p hero-frames/move
+          cp screens/results-dark.png hero-frames/01-results.png
+          cp screens/confirm-dark-region.png hero-frames/02-confirm.png
+          cp screens/trashed-dark-region.png hero-frames/04-result.png
+          launch hero dark
+          find_window 99999 || { echo "::error::No $APP window for hero"; exit 1; }
+          set -- $info
+          python3 - "$2,$3,$4,$5" hero-frames/move <<'PY'
+          import os, subprocess, sys, time
+          rect, out = sys.argv[1], sys.argv[2]
+          start = time.monotonic()
+          shots = []   # (seconds since start, file, process)
+          while time.monotonic() - start < 10:
+              path = "%s/f%03d.png" % (out, len(shots))
+              shots.append((time.monotonic() - start, path, subprocess.Popen(["screencapture", "-x", "-R", rect, path])))
+              while sum(p.poll() is None for _, _, p in shots[-3:]) >= 3: time.sleep(0.01)
+              time.sleep(0.05)
+          end = time.monotonic() - start
+          for _, _, p in shots: p.wait()
+          good = [(t, f) for t, f, p in shots if p.returncode == 0 and os.path.getsize(f) > 0]
+          print("%d of %d frames captured" % (len(good), len(shots)))
+          if len(good) < 10: sys.exit("too few hero frames")
+          with open(out + "/frames.ffconcat", "w") as f:
+              f.write("ffconcat version 1.0\n")
+              for i, (t, name) in enumerate(good):
+                  hold = 1.5 if i + 1 == len(good) else 0   # the last frame stays up before the GIF loops
+                  f.write("file '%s'\nduration %.3f\n" % (os.path.basename(name), (good[i + 1][0] if i + 1 < len(good) else end) - t + hold))
+              f.write("file '%s'\n" % os.path.basename(good[-1][1]))   # the concat demuxer drops the last duration unless the file repeats
+          PY
+          quit
+          out="$PWD/hero-frames/03-card.png"
+          open -n "$app" --args -demoScreen results -demoCardOut "$out"
+          for _ in $(seq 60); do [ -s "$out" ] && break; sleep 0.5; done
+          [ -s "$out" ] || { echo "::error::The Trace Report card was not written"; exit 1; }
+          # 1200 x 630 at 2x (VERIFY ImageRenderer on the runner): a PNG of that shape, not a blank or a truncated file.
+          python3 - "$out" <<'PY'
+          import os, struct, sys
+          with open(sys.argv[1], "rb") as f: head = f.read(24)
+          ok = head[1:4] == b"PNG"
+          w, h = struct.unpack(">II", head[16:24]) if ok else (0, 0)
+          size = os.path.getsize(sys.argv[1])
+          print("card: %dx%d, %d bytes" % (w, h, size))
+          if not ok or h == 0 or abs(w / h - 1200 / 630) > 0.01 or w < 1200 or size < 20000: sys.exit("::error::The Trace Report card is not a 1200x630 PNG")
+          PY
+          cp "$out" screens/card.png
+          quit
+          ls -l hero-frames
+          ls hero-frames/move | wc -l
+
+      # Best effort: Homebrew's ffmpeg bottle is the one unpinned download in this workflow (VERIFY it is quick enough),
+      # so a failure here must not fail the captures. The frames above are the deliverable.
+      - name: Hero GIF (best effort)
+        continue-on-error: true
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: |
+          command -v ffmpeg > /dev/null || brew install ffmpeg
+          ffmpeg -y -loglevel error -f concat -i hero-frames/move/frames.ffconcat \
+            -vf "fps=12,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse" \
+            hero-frames/move.gif
+          ls -l hero-frames/move.gif
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: screens
+          path: screens/
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: hero-frames
+          path: hero-frames/
+          if-no-files-found: warn

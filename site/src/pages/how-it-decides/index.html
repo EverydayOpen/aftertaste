@@ -1,0 +1,71 @@
+<!--meta {"title": "How Aftertaste decides what belongs to an app", "description": "The rules Aftertaste uses to match a leftover to an app: an exact bundle ID, what rebuilds itself, what may hold your data, what may be shared, and what is never touched. Five tiers, each with the reason shown."}-->
+<article class="read prose">
+  <p class="eyebrow"><b>03</b> · How it decides</p>
+  <h1>How Aftertaste decides what belongs to an app</h1>
+  <p class="lede">Every item gets a tier and a one-sentence reason. Nothing can raise a tier above the ceiling of its folder's rule, and any doubt lowers it. When the evidence is thin, the item is listed and left alone.</p>
+  <p class="note">These rules describe the code in the repository. {{statusShort}} The rules will change as testers find matches that are wrong; the changelog will say so.</p>
+
+  <div class="summary">
+    <h2>The short version</h2>
+    <ol>
+      <li>The item sits directly in a Library folder that Aftertaste knows about, or is a launch item or receipt that names the app.</li>
+      <li>Its name carries the app's <b>exact bundle ID</b>, or a system record proves the link. A name that only looks like the app is the weakest evidence.</li>
+      <li>No installed app owns it, nothing is running from it, and it is not on the never-touch list.</li>
+      <li>Only items that rebuild themselves or are only settings reach <b>High</b>, and only High is ticked for you.</li>
+    </ol>
+    <p>Everything else is shown with its reason: <b>Medium</b> may hold your data, <b>Review</b> may be shared, <b>Hands off</b> and <b>Needs admin</b> are never moved.</p>
+  </div>
+
+  <h2 id="protected">Before any rule: what is never touched</h2>
+  <p>Aftertaste asks first whether an item may be touched at all. These are listed with the reason where it helps, and they have no checkbox. The list is fixed in the code; your own keep-list can only add to it.</p>
+  <pre><code>~/Library/Mobile Documents, CloudStorage, CloudDocs, FileProvider (iCloud)
+~/Library/Keychains, Mail, Messages, Safari, Photos, Accounts, AddressBook
+Photos libraries, device backups (MobileSync), ~/.Trash, ~/Library/Developer
+anything named com.apple.* (except Xcode, iWork and a few developer tools)
+/System, /usr, /bin, /sbin, /private (receipts are shown, read-only)
+anything an installed app owns or shares, anything whose app is running
+a link that leads outside the Library, a locked item, a mounted drive
+Aftertaste's own journal, inventory and preferences
+the apps and folders on your own keep-list</code></pre>
+
+  <h2 id="match">How strong is the match?</h2>
+  <ol class="rules">
+    <li><h3>Exact</h3><p>The name is the bundle ID, the ID plus a known extension (<code>.plist</code>, <code>.savedState</code>), or a Team ID plus the ID. This can reach High.</p><code>exact id</code></li>
+    <li><h3>Proven</h3><p>A system record names the app: a launch agent whose program sits inside the removed app, a container whose label names the ID, an installer receipt. This can reach High where the folder's rule allows it.</p><code>proof</code></li>
+    <li><h3>Structural</h3><p>A helper suffix such as <code>.helper</code> or <code>.updater</code>, or a developer-ID prefix. Medium at best, because other apps from the same developer use the same names.</p><code>medium</code></li>
+    <li><h3>By name</h3><p>The app's display name at a word boundary, at least five characters, and not a common word such as Notes or Music. Review at best, never ticked.</p><code>review</code></li>
+  </ol>
+  <p>There is no fuzzy matching. If nothing above applies, the item is not listed as the app's at all.</p>
+
+  <h2 id="tiers">The tiers, with an example each</h2>
+  <p>Every row in the app carries a reason, and these are the words the sample data shows, from a scan for removed apps. The examples use made-up apps.</p>
+  <ul class="rows card">
+    <li class="ro hi"><span class="t"><b>Caches</b><code>~/Library/Caches/com.example.orbitmeet</code></span><span class="sz">{{orbitCaches}}</span><em class="tag violet">High</em><p>Named exactly com.example.orbitmeet; no installed app has this ID. Last seen installed on 2026-08-02. Not changed for 62 days.</p></li>
+    <li class="ro"><span class="t"><b>Application Support</b><code>~/Library/Application Support/com.example.orbitmeet</code></span><span class="sz">{{orbitData}}</span><em class="tag">Medium</em><p>Named exactly com.example.orbitmeet; no installed app has this ID. Last seen installed on 2026-08-02. Not changed for 70 days.</p></li>
+    <li class="ro"><span class="t"><b>Application Support</b><code>~/Library/Application Support/Quill Editor</code></span><span class="sz">54 MB</span><em class="tag">Review</em><p>Named like the app (Quill Editor); nothing else confirms it. No installed app has this ID. Last seen installed on 2026-06-05. Not changed for 120 days.</p></li>
+    <li class="ro"><span class="t"><b>Group Containers</b><code>~/Library/Group Containers/H7J6K5L4M3.glow</code></span><span class="sz">18 MB</span><em class="tag">Hands off</em><p>Starts with the developer ID H7J6K5L4M3. Other apps from the same developer may use it. No installed app has this ID. Last seen installed on 2026-07-20. Not changed for 75 days. Another app from the same developer (Glow Camera) is still installed, so this is not preselected. Another installed app uses this.</p></li>
+    <li class="ro"><span class="t"><b>Privileged helper</b><code>/Library/PrivilegedHelperTools/com.example.harborvpn.helper</code></span><span class="sz">1.5 MB</span><em class="tag">Needs admin</em><p>Its label (com.example.harborvpn.helper) starts with Harbor VPN's bundle ID. No installed app has this ID. Last seen installed on 2026-06-25. Not changed for 100 days. Needs your administrator. Reveal in Finder or copy the path.</p></li>
+  </ul>
+  <p>Launch agents are Hands off in this version, even with proof: "Listed only. Removing the file would not stop a job that is already loaded." Only High is ticked when a scan appears. Medium needs the per-app "Include my data" control and a tick in the confirm sheet. Review moves one item at a time, each with its own confirmation.</p>
+
+  <h2 id="shared">Shared folders</h2>
+  <p>Vendor folders such as Adobe, Microsoft, Google, Mozilla and JetBrains, shared updater caches, and Group Containers that several apps of one developer use can never rise above Review while another app might still need them. If one app of a suite is installed, the folder is Hands off. Items that look like they may be your only copy (wallets, vaults, backups, virtual machines, anything over 5 GB) are Review at most and never part of a bulk move.</p>
+
+  <h2 id="gone">When the app is already gone</h2>
+  <p>Without the app, its Info.plist and signature are gone too, so Aftertaste keeps an inventory of what was installed and matches against that. In a scan for apps that are gone, an item reaches High only if it is a cache or a log with an exact ID name, no installed app has that ID, it has not changed for 30 days, and no drive that could hold apps is unplugged. Everything else is Medium at most. If a drive is missing, nothing is above Review.</p>
+
+  <h2 id="bar">One bar per app</h2>
+  <p>The preview draws each app as one bar. Each class has a segment sized by its bytes, with a floor width so small ones stay visible, and the words live in the legend underneath so nothing is cut off. A violet edge marks High.</p>
+  <div class="card group">
+    {{orbitBar}}
+  </div>
+  <p class="note">Sample data for a made-up app.</p>
+
+  <h2 id="not-covered">What it does not look at</h2>
+  <p>Not covered: keychain items, login and background item records, Launch Services and Spotlight entries, iCloud data, other users, backups and snapshots. Every preview and report also says how many places it could read: "{{coverageSample}}" It says "Nothing found" only when it looked everywhere.</p>
+
+  <h2 id="wrong">It got one wrong</h2>
+  <p>A match that lists something you still need is a bug we want to hear about. Open the form, say which item and which app, and never paste secrets.</p>
+  <p class="actions"><a class="button" href="{{wrongMatchURL}}">Report a wrong match</a> <a class="button secondary" href="https://github.com/{{releasesRepo}}/blob/main/Sources/AftertasteCore/Rules/ResidueRules.swift">Read the rules</a></p>
+  <p class="note">Aftertaste is not affiliated with or endorsed by any app it detects. App names in the examples are made up.</p>
+</article>

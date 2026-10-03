@@ -1,0 +1,3 @@
+# handwritten
+FileVault is On.
+Encryption in progress: Percent completed = 49.3

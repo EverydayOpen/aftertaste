@@ -1,0 +1,30 @@
+{
+  "name": "vendor-roots-adobe-jetbrains",
+  "note": "Vendor folders (Adobe, JetBrains) are shared by every product of the vendor and are never offered, even when the removed app display name starts with the vendor name.",
+  "kind": "app",
+  "target": "com.adobe.Photoshop",
+  "apps": [
+    {"id": "com.adobe.Photoshop", "name": "Adobe Photoshop 2026", "path": "/Applications/Adobe Photoshop 2026/Adobe Photoshop 2026.app"},
+    {"id": "com.adobe.Illustrator", "name": "Adobe Illustrator 2026", "path": "/Applications/Adobe Illustrator 2026/Adobe Illustrator 2026.app"},
+    {"id": "com.jetbrains.intellij", "name": "IntelliJ IDEA"},
+    {"id": "com.jetbrains.pycharm", "name": "PyCharm"}
+  ],
+  "library": {
+    "Library/Application Support": ["Adobe", "JetBrains", "Adobe Photoshop 2026", "Adobe Illustrator 2026"],
+    "Library/Caches": ["com.adobe.Photoshop", "com.adobe.Illustrator", "Adobe", "JetBrains"],
+    "Library/Preferences": ["com.adobe.Photoshop.plist", "com.adobe.Illustrator.plist"],
+    "Library/Logs": ["Adobe", "JetBrains"]
+  },
+  "expect": {
+    "tiers": {
+      "/Applications/Adobe Photoshop 2026/Adobe Photoshop 2026.app": "high",
+      "Library/Caches/com.adobe.Photoshop": "high",
+      "Library/Preferences/com.adobe.Photoshop.plist": "high",
+      "Library/Application Support/Adobe Photoshop 2026": "low"
+    },
+    "absent": ["Library/Application Support/Adobe", "Library/Application Support/JetBrains", "Library/Caches/Adobe", "Library/Caches/JetBrains", "Library/Logs/Adobe",
+               "Library/Logs/JetBrains", "Library/Caches/com.adobe.Illustrator", "Library/Preferences/com.adobe.Illustrator.plist", "Library/Application Support/Adobe Illustrator 2026"],
+    "installedOwned": ["Library/Application Support/Adobe", "Library/Application Support/JetBrains", "Library/Caches/Adobe", "Library/Logs/Adobe",
+                       "Library/Caches/com.adobe.Illustrator", "Library/Application Support/Adobe Illustrator 2026"]
+  }
+}

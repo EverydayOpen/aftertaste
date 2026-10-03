@@ -1,0 +1,23 @@
+{
+  "name": "symlink-escapes-library-roots",
+  "note": "Entries that are links are the item, never their target, and are never above Review: Aftertaste cannot see where they point.",
+  "kind": "app",
+  "target": "com.example.linky",
+  "apps": [
+    {"id": "com.example.linky", "name": "Linky App"}
+  ],
+  "library": {
+    "Library/Application Support": [{"name": "com.example.linky", "type": "symlink"}, {"name": "Linky App", "type": "symlink"}],
+    "Library/Caches": [{"name": "com.example.linky", "type": "symlink"}],
+    "Library/Preferences": [{"name": "com.example.linky.plist", "type": "symlink"}]
+  },
+  "expect": {
+    "tiers": {
+      "Library/Application Support/com.example.linky": "low",
+      "Library/Application Support/Linky App": "low",
+      "Library/Caches/com.example.linky": "low",
+      "Library/Preferences/com.example.linky.plist": "low"
+    },
+    "preselected": ["/Applications/Linky App.app"]
+  }
+}

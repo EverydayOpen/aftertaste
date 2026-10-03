@@ -1,0 +1,25 @@
+{
+  "name": "receipt-bom-shared-toplevel",
+  "note": "Installer receipts are listed by name when the package ID starts with the app ID, always as Needs admin. Packages of other products, even from the same vendor, are not.",
+  "kind": "app",
+  "target": "com.example.orbit",
+  "apps": [
+    {"id": "com.example.orbit", "name": "Orbit App"}
+  ],
+  "library": {
+    "/private/var/db/receipts": [
+      "com.example.orbit.pkg.bom", "com.example.orbit.pkg.plist", "com.example.orbit.shared-frameworks.bom",
+      "com.example.orbitron.pkg.bom", "com.example.pkg.shared.bom", "com.vendor.pkg.Runtime.bom", "com.apple.pkg.Core.bom"
+    ]
+  },
+  "expect": {
+    "tiers": {
+      "/private/var/db/receipts/com.example.orbit.pkg.bom": "needsAdmin",
+      "/private/var/db/receipts/com.example.orbit.pkg.plist": "needsAdmin",
+      "/private/var/db/receipts/com.example.orbit.shared-frameworks.bom": "needsAdmin"
+    },
+    "absent": ["/private/var/db/receipts/com.example.orbitron.pkg.bom", "/private/var/db/receipts/com.example.pkg.shared.bom",
+               "/private/var/db/receipts/com.vendor.pkg.Runtime.bom", "/private/var/db/receipts/com.apple.pkg.Core.bom"],
+    "preselected": ["/Applications/Orbit App.app"]
+  }
+}

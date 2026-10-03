@@ -1,0 +1,26 @@
+{
+  "name": "unmounted-volume-orphans",
+  "note": "An orphan scan while a drive that could hold apps looks missing: everything is capped at Review and nothing is preselected.",
+  "kind": "orphans",
+  "volumeMayBeMissing": true,
+  "apps": [
+    {"id": "com.example.present", "name": "Present App"}
+  ],
+  "library": {
+    "Library/Preferences": ["com.example.gone.plist", "com.example.present.plist"],
+    "Library/Caches": ["com.example.gone", "com.example.present"],
+    "Library/Logs": ["com.example.gone"],
+    "Library/Saved Application State": ["com.example.gone.savedState"]
+  },
+  "expect": {
+    "tiers": {
+      "Library/Preferences/com.example.gone.plist": "low",
+      "Library/Caches/com.example.gone": "low",
+      "Library/Logs/com.example.gone": "low",
+      "Library/Saved Application State/com.example.gone.savedState": "low"
+    },
+    "absent": ["Library/Preferences/com.example.present.plist", "Library/Caches/com.example.present"],
+    "preselected": [],
+    "installedOwned": ["Library/Preferences/com.example.present.plist", "Library/Caches/com.example.present"]
+  }
+}

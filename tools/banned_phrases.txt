@@ -1,0 +1,28 @@
+# Phrases Aftertaste never uses to describe itself (APP4 §1.2). One extended regex per line, matched case-insensitively.
+# Single source of truth: tools/safety_greps.sh greps App/, Sources/, site/, README.md and CHANGELOG.md with it, and
+# AftertasteCore's BannedPhrases.patterns must equal these lines (a Core test compares them).
+# A line that must mention one (this list, a "we never claim this" sentence) carries the marker  no-claim-ok  and says why.
+secure(ly)? +erase
+secure(ly)? +delete
+permanently +delete
+permanently +gone
+unrecoverable
+irrecoverable
+cannot +be +recovered
+forensic-proof
+anti-forensic
+\bmilitary\b
+\bDoD\b
+\bNSA\b
+Gutmann
+\bshred
+\bwipe
+100% +gone
+\bguarantee
+\bcertified\b
+certificate +of
+\bcompliant\b
+\bGDPR\b
+\bHIPAA\b
+clean +your +Mac
+\bjunk\b

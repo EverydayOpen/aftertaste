@@ -1,0 +1,30 @@
+{
+  "name": "other-live-app-owns-longer-id",
+  "note": "com.vendor.tool is being removed; com.vendor.tool.pro is a different installed app whose folders start with the removed ID. They are the other app and must not be offered.",
+  "kind": "app",
+  "target": "com.vendor.tool",
+  "apps": [
+    {"id": "com.vendor.tool", "name": "Vendor Tool"},
+    {"id": "com.vendor.tool.pro", "name": "Vendor Tool Pro", "embedded": ["com.vendor.tool.pro.helper"]}
+  ],
+  "library": {
+    "Library/Caches": ["com.vendor.tool", "com.vendor.tool.pro", "com.vendor.tool.pro.helper", "com.vendor.tool.ShipIt"],
+    "Library/Preferences": ["com.vendor.tool.plist", "com.vendor.tool.pro.plist", "com.vendor.tool.pro.helper.plist"],
+    "Library/Saved Application State": ["com.vendor.tool.savedState", "com.vendor.tool.pro.savedState"],
+    "Library/Application Support": ["Vendor Tool", "Vendor Tool Pro", "com.vendor.tool.pro"]
+  },
+  "expect": {
+    "tiers": {
+      "Library/Caches/com.vendor.tool": "high",
+      "Library/Caches/com.vendor.tool.ShipIt": "high",
+      "Library/Preferences/com.vendor.tool.plist": "high",
+      "Library/Saved Application State/com.vendor.tool.savedState": "high",
+      "Library/Application Support/Vendor Tool": "low"
+    },
+    "absent": ["Library/Caches/com.vendor.tool.pro", "Library/Caches/com.vendor.tool.pro.helper", "Library/Preferences/com.vendor.tool.pro.plist",
+               "Library/Preferences/com.vendor.tool.pro.helper.plist", "Library/Saved Application State/com.vendor.tool.pro.savedState",
+               "Library/Application Support/com.vendor.tool.pro", "Library/Application Support/Vendor Tool Pro"],
+    "installedOwned": ["Library/Caches/com.vendor.tool.pro", "Library/Caches/com.vendor.tool.pro.helper", "Library/Preferences/com.vendor.tool.pro.plist",
+                       "Library/Saved Application State/com.vendor.tool.pro.savedState", "Library/Application Support/Vendor Tool Pro", "Library/Application Support/com.vendor.tool.pro"]
+  }
+}

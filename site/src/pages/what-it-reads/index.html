@@ -1,0 +1,89 @@
+<!--meta {"title": "What Aftertaste reads, and what it never does", "description": "Everything Aftertaste reads, everything it never does, how a move to the Trash works step by step, the safety rules it is built under, what its journal holds, and what this website collects (nothing). Free, open source, offline."}-->
+<article class="read prose">
+  <p class="eyebrow"><b>04</b> · What it reads</p>
+  <h1>What Aftertaste reads, and what it never does</h1>
+  <p class="lede">Aftertaste moves other apps' files, so a bug could take the wrong thing. These are the rules it is built under. Most of the mechanical ones are checked by scripts that run in CI and fail the build when code breaks them.</p>
+  <p class="note">{{statusShort}} The matching and planning logic has automated tests. {{statusNote}}</p>
+
+  <div class="summary">
+    <h2>The short version</h2>
+    <ul>
+      <li><b>Two verbs.</b> Move to Trash and Undo. Nothing is deleted, overwritten or emptied.</li>
+      <li><b>Preview first.</b> Nothing moves until you press the button for the items you ticked.</li>
+      <li><b>Only what rebuilds itself or is only settings is ticked,</b> and every item is checked again right before it moves.</li>
+      <li><b>Nothing leaves your Mac.</b> No network, no account, no telemetry, no helper, no administrator rights.</li>
+      <li><b>It says where it could not look,</b> and what no app can erase.</li>
+    </ul>
+  </div>
+
+  <h2 id="reads">What it reads</h2>
+  <ul class="rules plain">
+    <li><h3>Names, sizes and dates</h3><p>It lists folders and files in the Library places it knows (caches, preferences, application support, containers, saved state, logs, launch agents and a few more) and notes their size and dates. It never opens a file to read what is in it.</p></li>
+    <li><h3>The installed apps</h3><p>The Applications folders, to learn each app's name, bundle ID, version and, from its signature, its developer ID and app groups. This is how it tells an app that is gone from one that is still in use.</p></li>
+    <li><h3>A few small property lists</h3><p>An app's Info.plist, the launch agent files in your LaunchAgents folder, and the label file inside a container. One regular file each, never a link, 1 MB at most.</p></li>
+    <li><h3>Which apps and programs are running</h3><p>So it can refuse to move anything whose app is running. If it cannot tell, it treats the item as running.</p></li>
+    <li><h3>Three read-only system facts</h3><p>For the Erase readiness page: whether FileVault is on, whether the disk is flash or spinning, and how many local snapshots exist. See <a href="#commands">the three commands</a>.</p></li>
+  </ul>
+
+  <h2 id="never">What it never does</h2>
+  <ul class="rules plain">
+    <li><h3>Ask for permissions</h3><p>No Accessibility, Automation or administrator password, and no helper. It never requires Full Disk Access. When macOS blocks a folder it says so and offers an optional Settings shortcut; it works without it. Aftertaste is not sandboxed, because a sandboxed app cannot see other apps' leftovers, and it needs no entitlement. Some macOS versions protect other apps' Containers and Group Containers. Those folders are named as "protected by macOS" and counted in the coverage line, never guessed at.</p></li>
+    <li><h3>Use the network</h3><p>No telemetry, no account, no update check. "Check for updates" opens the releases page in your browser, and only when you click it. A script rejects the common networking APIs in CI.</p></li>
+    <li><h3>Read file contents</h3><p>Scanning uses names, sizes and dates. When iCloud has not downloaded a file, it records that and moves on.</p></li>
+    <li><h3>Delete, overwrite or empty</h3><p>Items go to the Trash and nothing else happens to them. There is no overwriting, no emptying of the Trash, no permanent removal, and no command that deletes.</p></li>
+    <li><h3>Touch iCloud, Apple's data or its own</h3><p>iCloud folders, Keychains, Mail, Messages, Photos and anything named com.apple.* are never listed as leftovers. Aftertaste never moves its own journal, inventory or preferences.</p></li>
+    <li><h3>Change a setting or a process</h3><p>It does not toggle iCloud or system settings, change permissions, stop or signal a process, or run a launch command. Launch agents, daemons and privileged helpers are listed, not removed.</p></li>
+    <li><h3>Run a shell</h3><p>The only programs it starts are the three below, by absolute path, with a fixed argument list.</p></li>
+    <li><h3>Promise what it cannot</h3><p>It reports what was found and what moved. It does not say your Mac is clean, and it does not say anything is gone for good.</p></li>
+  </ul>
+
+  <h2 id="move">How a move works</h2>
+  <ol class="rules">
+    <li><h3>You confirm exactly what will move</h3><p>The confirm sheet lists every item in plain words. Medium items need the per-app "Include my data" control and an acknowledgement. Review items run one at a time.</p><code>confirm</code></li>
+    <li><h3>Each item is checked again, right before it moves</h3><p>Same device, file number, type, size and date as at the scan. Its folder is an allowed Library folder, it is not a link that leads elsewhere, it is local, unlocked and not an iCloud placeholder, and its app is not running. If anything changed, the item is skipped and the journal says so.</p><code>lstat</code></li>
+    <li><h3>The journal gets a line first</h3><p>An intent line is written and flushed before the move, a result line after. If the journal cannot be opened for appending, nothing moves.</p><code>0600</code></li>
+    <li><h3>The item goes to the Trash</h3><p>One item at a time, with the system's own call. Nothing in the Library is removed in any other way.</p><code>trashItem</code></li>
+    <li><h3>Undo puts it back</h3><p>History moves the item from the Trash to the place it came from, using the location the system recorded. It never overwrites: if something is already there, it offers to reveal the item in the Trash instead.</p><code>undo</code></li>
+  </ol>
+  <p>The call that moves an item to the Trash lives in one source file, <a href="https://github.com/{{releasesRepo}}/blob/main/Sources/AftertasteMac/Trasher.swift"><code>Trasher.swift</code></a>, and CI fails if it appears anywhere else.</p>
+
+  <h2 id="rules">The safety rules</h2>
+  <ol class="rules">
+    <li><h3>Two verbs only</h3><p>Move to Trash, and Undo. No remove, unlink or delete call exists in the code, and a check fails the build if one appears.</p><code>trashItem</code></li>
+    <li><h3>The preview is mandatory</h3><p>Only a plan built from a scan you saw in this session can run, and only for the items you ticked. No one-click, background, scheduled or on-launch clean.</p><code>plan</code></li>
+    <li><h3>Only High is ticked</h3><p>Medium needs a switch and an acknowledgement. Review runs alone. Hands off and Needs admin have no checkbox.</p><code>high</code></li>
+    <li><h3>Every item must pass the guard</h3><p>An immediate child of an allowed folder, never a followed link, the same disk as its folder, a local volume, not locked, not on the never-touch list, owned by you.</p><code>lstat</code></li>
+    <li><h3>Running means blocked</h3><p>If the app, or any program run from inside it, is running, its items do not move. Aftertaste never quits or signals anything.</p><code>running</code></li>
+    <li><h3>Shared data is protected</h3><p>Group Containers, vendor folders and plug-ins stay Review or Hands off while another app may need them.</p><code>shared</code></li>
+    <li><h3>iCloud is hands off</h3><p>Its folders are never listed, scanned or touched. A move there would sync to every device.</p><code>icloud</code></li>
+    <li><h3>The journal fails closed</h3><p>A file only you can read, one per month, append-only, in a folder only you can open.</p><code>0600</code></li>
+    <li><h3>Links and mounts are not followed</h3><p>A link is the item, never its target. Nothing crosses onto another disk.</p><code>O_NOFOLLOW</code></li>
+    <li><h3>Unknown means no</h3><p>An unreadable identity, an unknown volume type, a running state it cannot determine or a guard failure makes the item Hands off, or stops the run.</p><code>fail closed</code></li>
+    <li><h3>No overwriting in version 1</h3><p>Aftertaste does not fill free space and does not overwrite files. On flash storage that would not do what it sounds like. <a href="/guides/can-deleted-files-be-recovered-mac-apfs-ssd-filevault/">Why</a>.</p><code>none</code></li>
+    <li><h3>No shell, three commands</h3><p>Absolute paths, argument lists, read-only.</p><code>3 commands</code></li>
+  </ol>
+
+  <h2 id="commands">The three commands</h2>
+  <p>The Erase readiness page runs exactly these, with nothing added, and reads their output. They change nothing.</p>
+  <pre><code>/usr/bin/fdesetup status
+/usr/sbin/diskutil info -plist /
+/usr/bin/tmutil listlocalsnapshots /</code></pre>
+
+  <h2 id="log">The journal</h2>
+  <p>Every item of every run, including skipped and failed ones, is appended to a file in <code>~/Library/Application Support/Aftertaste/</code>, one per month, readable only by you and never inside iCloud. A line holds the time, what was done, the item's path under your home folder, its size and the result. Undo needs the real path, so the journal keeps it; the journal never leaves your Mac. The list of apps Aftertaste has seen installed is kept next to it. A Trace Report is different: its paths use <code>~</code>, and "Hide app names" replaces app names with App 1, App 2.</p>
+
+  <h2 id="privacy">Privacy</h2>
+  <h3>The app</h3>
+  <p>It collects nothing and sends nothing, because it makes no network connection at all. The card and report are made on your Mac. Nothing is shared unless you copy or save one yourself.</p>
+  <h3>This website</h3>
+  <p>It sets no cookies, runs no analytics, loads no third-party scripts, fonts or images, and makes no request beyond its own files. A strict content policy enforces that in your browser. The site is hosted on GitHub Pages, which keeps its own server logs under <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>; we do not receive them.</p>
+
+  <h2 id="trust">Why you can check all of this</h2>
+  <ul>
+    <li>It is MIT licensed and has no third-party dependencies in version 1.</li>
+    <li>The rules are written down in the repository, and the mechanical ones are scripts you can run yourself.</li>
+    <li>Builds come only from <a href="{{releasesURL}}">GitHub Releases</a>, with a checksum in the notes.</li>
+  </ul>
+  <p>To report a vulnerability, or a way to make Aftertaste move something it should not, see the <a href="https://github.com/{{releasesRepo}}/security/policy">security policy</a>.</p>
+  <p class="note">Aftertaste is not affiliated with or endorsed by any app it detects.</p>
+</article>

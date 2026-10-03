@@ -1,0 +1,25 @@
+{
+  "name": "office-all-removed-group-containers-stay-review",
+  "note": "Word is the only Office app and is being removed. The shared Group Containers are still never above Review.",
+  "kind": "app",
+  "target": "com.microsoft.Word",
+  "apps": [
+    {"id": "com.microsoft.Word", "name": "Microsoft Word", "team": "UBF8T346G9", "groups": ["UBF8T346G9.Office"]}
+  ],
+  "library": {
+    "Library/Caches": ["com.microsoft.Word"],
+    "Library/Group Containers": ["UBF8T346G9.Office", "UBF8T346G9.ms"]
+  },
+  "sizes": {
+    "Library/Group Containers/UBF8T346G9.Office": 9000000,
+    "Library/Group Containers/UBF8T346G9.ms": 1000
+  },
+  "expect": {
+    "tiers": {
+      "Library/Caches/com.microsoft.Word": "high",
+      "Library/Group Containers/UBF8T346G9.Office": "low",
+      "Library/Group Containers/UBF8T346G9.ms": "low"
+    },
+    "preselected": ["/Applications/Microsoft Word.app", "Library/Caches/com.microsoft.Word"]
+  }
+}

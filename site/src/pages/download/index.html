@@ -1,0 +1,20 @@
+<!--meta {"title": "Download Aftertaste for Mac", "description": "Download Aftertaste for Mac, free: find what apps leave behind and move it to the Trash with Undo. Requires macOS {{minMacOS}} or later. Unsigned beta builds come from GitHub Releases only."}-->
+<div class="band dawn"><i class="horizon" aria-hidden="true"></i><div class="podium"><img class="icon" src="/icon.png" width="128" height="128" alt="Aftertaste app icon"></div></div>
+<article class="read prose center">
+  <p class="eyebrow"><b>05</b> · Download</p>
+  <h1>Download Aftertaste</h1>
+  <p class="lede">Free and open source. {{status}}</p>
+  <p class="actions"><a class="button" href="{{releasesURL}}"><svg aria-hidden="true"><use href="#i-down"/></svg><span class="sep"></span>Open GitHub Releases</a> <a class="button secondary" href="https://github.com/{{releasesRepo}}">View source</a></p>
+  <p class="facts">macOS {{minMacOS}} or later · Apple silicon and Intel · MIT licence</p>
+
+  <ol class="steps">
+    <li><b>Download from Releases</b><span>Take the latest build from GitHub Releases and check it against the <code>SHA256SUMS</code> (or <code>.sha256</code>) file attached to the same release, not the editable notes: run <code>shasum -a 256 -c</code> next to the download. Use no other site, and never paste a Terminal command to install it.</span></li>
+    <li><b>Move Aftertaste to Applications</b><span>Open the download and drag Aftertaste into the Applications folder.</span></li>
+    <li><b>Open it the first time</b><span>Public builds are unsigned betas until there is a Developer ID, so macOS blocks the first launch. On macOS 13 and 14, right-click Aftertaste, choose Open, then Open again. On macOS 15 or later, open it once, then go to System Settings › Privacy &amp; Security and choose Open Anyway.</span></li>
+  </ol>
+
+  <h2 id="source">Or build it yourself</h2>
+  <p>Everything is in the repository. You need a Mac with Xcode and <a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a>; the steps are in the <a href="https://github.com/{{releasesRepo}}#build-from-source">README</a>.</p>
+  <p class="note">Aftertaste needs no permissions, makes no network connections and is not affiliated with or endorsed by any app it detects. Moving files to the Trash can be undone until you empty the Trash; read <a href="/what-it-reads/">what it reads and what it never does</a> first.</p>
+  <p class="official"><svg aria-hidden="true"><use href="#i-check"/></svg><span>Only from github.com/{{releasesRepo}}/releases. Aftertaste is free: anyone asking you to pay for it is not us.</span></p>
+</article>

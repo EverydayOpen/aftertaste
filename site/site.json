@@ -1,0 +1,10 @@
+{
+  "name": "Aftertaste",
+  "baseURL": "https://everydayopen.github.io/aftertaste",
+  "tagline": "Find what apps leave behind. See why. Move it to the Trash. Undo.",
+  "releasesRepo": "EverydayOpen/aftertaste",
+  "dmgName": "Aftertaste.dmg",
+  "minMacOS": "13",
+  "owner": "EverydayOpen",
+  "placeholders": []
+}

@@ -1,0 +1,68 @@
+<!--meta {"title": "Does uninstalling a Mac app delete everything?", "description": "No. Dragging an app to the Trash removes the app, not what it wrote in your Library. What stays, folder by folder, with figures from the Homebrew cask data, how to look yourself, and what no app can see."}-->
+<article class="read prose guide">
+  <p class="eyebrow"><b>G1</b> · Guide · Checked 3 October 2026 · macOS</p>
+  <h1>Does uninstalling a Mac app delete everything?</h1>
+
+  <div class="summary">
+    <h2>The short answer</h2>
+    <ol>
+      <li>No. Dragging an app to the Trash removes the app bundle. What the app wrote in your Library stays, and Apple says so: deleting an app does not remove the documents or other files you made with it.</li>
+      <li>For most apps something stays. In Homebrew's cask data, 4,734 of 7,772 casks list leftover paths, and the folders named most often are Preferences, Application Support, Saved Application State and Caches.</li>
+      <li>Some of it rebuilds itself and some of it is your own data, so sort it before you remove anything, and move it to the Trash instead of deleting it.</li>
+    </ol>
+  </div>
+
+  <h2 id="trash">What the Trash removes</h2>
+  <p>The app itself: the <code>.app</code> bundle in Applications, or in the Applications folder of your home folder. If an app ships its own uninstaller, <a href="https://support.apple.com/en-us/102610">Apple's advice is to use that</a>, because it can remove login items, extensions and other data the app stored elsewhere. If it does not, you drag the app to the Trash, and the space is freed when you empty the Trash.</p>
+  <p>Nothing else is removed. The app's preferences, caches, saved window state, containers, logs and helpers are separate files in other folders.</p>
+
+  <h2 id="stays">What stays, by folder</h2>
+  <p>A cask is a Homebrew recipe for installing a Mac app, and many carry a <a href="https://docs.brew.sh/Cask-Cookbook">zap entry</a>: the author's list of what an uninstall leaves behind. We counted the public catalogue on 3 October 2026. It is a hint from people who maintain apps, not a complete inventory. The percentages below are the share of the 4,734 casks with a zap entry that list that kind of place. The tag is the highest tier Aftertaste gives an exact bundle-ID match there.</p>
+  <ul class="rows card">
+    <li class="ro hi"><span class="t"><b>Preferences</b><code>~/Library/Preferences/&lt;bundle ID&gt;.plist</code></span><span class="sz">75.5 %</span><em class="tag violet">High</em><p>The app's settings. A reinstall starts with defaults. A licence key or a sign-in can live here.</p></li>
+    <li class="ro"><span class="t"><b>Application Support</b><code>~/Library/Application Support/&lt;ID or name&gt;</code></span><span class="sz">64.9 %</span><em class="tag">Medium</em><p>Databases, licences, plug-ins, project files. The most likely place for your own data, and the most shared one.</p></li>
+    <li class="ro hi"><span class="t"><b>Saved Application State</b><code>~/Library/Saved Application State/&lt;ID&gt;.savedState</code></span><span class="sz">48.1 %</span><em class="tag violet">High</em><p>Window positions and what was open. Rebuilt automatically.</p></li>
+    <li class="ro hi"><span class="t"><b>Caches</b><code>~/Library/Caches/&lt;ID&gt;</code></span><span class="sz">46.5 %</span><em class="tag violet">High</em><p>Copies of things the app can fetch or compute again. Rebuilt automatically.</p></li>
+    <li class="ro hi"><span class="t"><b>HTTPStorages</b><code>~/Library/HTTPStorages/&lt;ID&gt;</code></span><span class="sz">24.1 %</span><em class="tag violet">High</em><p>Cookies and credentials kept for the app's web requests. You would sign in again.</p></li>
+    <li class="ro hi"><span class="t"><b>Logs</b><code>~/Library/Logs/&lt;ID or name&gt;</code></span><span class="sz">18.8 %</span><em class="tag violet">High</em><p>Old logs and crash reports. Nothing depends on them. A match by name only is Review.</p></li>
+    <li class="ro"><span class="t"><b>Containers</b><code>~/Library/Containers/&lt;ID&gt;</code></span><span class="sz">14.7 %</span><em class="tag">Medium</em><p>A sandboxed app's whole world, including documents it kept for you. Often the only copy.</p></li>
+    <li class="ro"><span class="t"><b>Application Scripts</b><code>~/Library/Application Scripts/&lt;ID&gt;</code></span><span class="sz">14.0 %</span><em class="tag">Medium</em><p>Scripts for sandboxed apps and extensions. You may have written them.</p></li>
+    <li class="ro hi"><span class="t"><b>WebKit</b><code>~/Library/WebKit/&lt;ID&gt;</code></span><span class="sz">10.5 %</span><em class="tag violet">High</em><p>Local storage and caches of web views inside the app.</p></li>
+    <li class="ro"><span class="t"><b>Group Containers</b><code>~/Library/Group Containers/&lt;Team ID&gt;.&lt;name&gt;</code></span><span class="sz">5.7 %</span><em class="tag">Review</em><p>Shared by an app, its extensions and other apps from the same developer. Review at best, never ticked.</p></li>
+    <li class="ro"><span class="t"><b>LaunchAgents</b><code>~/Library/LaunchAgents/&lt;label&gt;.plist</code></span><span class="sz">2.0 %</span><em class="tag">Hands off</em><p>Starts a background job at login. Removing the file does not stop a job that is already loaded.</p></li>
+  </ul>
+  <p>Outside your home folder, in <code>/Library</code>, the same cask data names helpers and daemons (about 1.0 % list a launch daemon, 0.4 % a privileged helper) and installer receipts (0.1 %). Those need an administrator to change, so Aftertaste lists them, with the reason, and does not remove them.</p>
+
+  <h2 id="look">How to look yourself</h2>
+  <ol class="rules">
+    <li><h3>Open the Library</h3><p>In Finder, choose Go › Go to Folder, type <code>~/Library</code> and press Return. The Library is hidden by default; holding Option while you open the Go menu also shows it.</p><code>⇧⌘G</code></li>
+    <li><h3>Find the app's bundle ID</h3><p>It is a reverse-domain name such as <code>com.example.orbitmeet</code>. Right-click the app, choose Show Package Contents, open <code>Contents/Info.plist</code> and read <code>CFBundleIdentifier</code>. Or, with the app still installed: <code>mdls -name kMDItemCFBundleIdentifier /Applications/Name.app</code>.</p><code>CFBundleIdentifier</code></li>
+    <li><h3>Search each folder for that ID</h3><p>Look in the folders above for an item named with the ID. A name that only resembles the app is weaker evidence than an exact ID.</p><code>exact id</code></li>
+    <li><h3>Move, don't delete</h3><p>Drag what you are sure of to the Trash. You can put it back until you empty it.</p><code>Trash</code></li>
+  </ol>
+
+  <h2 id="keep">What is worth keeping</h2>
+  <ul>
+    <li><b>Settings you may want back.</b> If you might reinstall the app, its Preferences file carries your choices.</li>
+    <li><b>Documents inside Application Support or a Container.</b> Notes, recordings, databases and project files sometimes live there. Open the folder and look before you move it.</li>
+    <li><b>Licence files.</b> Some apps keep a licence or an activation record in Application Support or Preferences. Keep it if you paid for the app and may come back.</li>
+    <li><b>Anything for a subscription.</b> Apple notes that deleting an app does not cancel a subscription bought through it.</li>
+  </ul>
+
+  <h2 id="unseen">What no app sees</h2>
+  <p>Even a careful look in the Library misses records that live elsewhere: keychain items, login and background item records, Launch Services and Spotlight entries, iCloud copies, other users' accounts, and backups and snapshots. Aftertaste says "Not covered" about all of them. The Library is also not fully readable to an ordinary app: macOS protects some folders, mostly Containers and Group Containers, and a good tool says "protected by macOS" instead of "nothing found".</p>
+
+  <h2 id="aftertaste">Doing this with Aftertaste</h2>
+  <p>We make Aftertaste, a free, open-source Mac app built around this folder list. It matches exact bundle IDs first, ticks only what rebuilds itself or is only settings, shows the reason for every item, moves the ones you choose to the Trash, and keeps a journal so Undo works. One bar per app shows where the bytes are:</p>
+  <div class="card group">
+    {{orbitBar}}
+  </div>
+  <p class="note">Sample data for a made-up app. {{statusShort}} <a href="/how-it-decides/">How it decides</a>. Aftertaste is not affiliated with or endorsed by any app it detects.</p>
+
+  <h2 id="sources">Sources</h2>
+  <ul class="sources">
+    <li>Apple Support: <a href="https://support.apple.com/en-us/102610">Delete or uninstall apps on Mac</a> (documents and files you made are not removed; use the app's own uninstaller if it has one; Empty Trash frees the space)</li>
+    <li>Homebrew: <a href="https://docs.brew.sh/Cask-Cookbook">Cask Cookbook</a>, the <code>zap</code> stanza</li>
+    <li>Homebrew: <a href="https://formulae.brew.sh/api/cask.json">the public cask catalogue</a>. 4,734 of 7,772 casks had a zap entry on 3 October 2026; the folder shares are our count of that data</li>
+  </ul>
+</article>

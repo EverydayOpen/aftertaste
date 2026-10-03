@@ -1,0 +1,250 @@
+<!--meta {"title": "Aftertaste for Mac: find what an uninstalled app left behind, and why", "description": "Aftertaste finds what an app you removed left behind on your Mac, shows why each item belongs to it, moves the ones you choose to the Trash so you can undo, and gives you a receipt. Free, open source, offline."}-->
+<section class="hero dawn" aria-labelledby="hero-h">
+  <div class="wide hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow"><b>01</b> · Leftover finder · macOS {{minMacOS}} or later</p>
+      <h1 id="hero-h">What an app <mark>left behind.</mark></h1>
+      <p class="lede">Find what apps leave behind. See why. Move it to the Trash. Undo. Aftertaste shows every leftover with the reason it belongs to the app, ticks only what rebuilds itself or is only settings, and keeps a journal so you can put items back.</p>
+      <p class="actions"><a class="button" href="/download/"><svg aria-hidden="true"><use href="#i-down"/></svg><span class="sep"></span>Download free</a> <a class="button secondary" href="https://github.com/{{releasesRepo}}">View source</a></p>
+      <p class="facts">Free · Needs no permissions · No network · Nothing leaves your Mac · {{statusTag}}</p>
+    </div>
+    <div class="stage" data-tilt>
+      <div class="scene" id="hero-scene">
+        <i class="horizon" aria-hidden="true"></i>
+        <i class="desk" aria-hidden="true"></i>
+        <div class="stack" aria-hidden="true">
+          <i class="appicon"><b></b></i>
+          <i class="outline"></i>
+          <ul class="slabs">
+            <li><span>Caches</span><b>{{orbitCaches}}</b><em class="tag violet">High</em></li>
+            <li><span>Logs</span><b>{{orbitLogs}}</b><em class="tag violet">High</em></li>
+            <li class="keep"><span>State, WebKit</span><b>{{orbitState}}</b><em class="tag">Medium</em></li>
+            <li class="keep"><span>Your data</span><b>{{orbitData}}</b><em class="tag">Medium</em></li>
+            <li class="listed"><span>Launch agents</span><b>2</b><em class="tag">Hands off</em></li>
+          </ul>
+        </div>
+        <div class="tray" aria-hidden="true"><span class="label">Trash</span><b class="count">2</b></div>
+        <div class="report-wrap">
+          <figure class="report" id="hero-card" role="img" aria-label="Illustration with sample data: the Aftertaste Trace Report card. Orbit Meet 6.2 left behind: 214 files, 1.3 GB, 2 launch agents, 1 privileged helper. {{coverageSample}} Launch agents and helpers are listed, not removed. macOS 26.1, scanned 2026-10-03, measured on this Mac, nothing sent anywhere. On the back: this is a list of what was found in the places listed above; it is not proof that anything was erased.">
+            <div class="face front">
+              <p class="card-brand"><svg aria-hidden="true"><use href="#i-mark"/></svg>Aftertaste<span class="tag violet">Sample data</span></p>
+              <p class="card-h"><b>Orbit Meet 6.2</b> left behind</p>
+              <p class="card-figs"><b>214</b> files · <b>1.3</b> GB · <b>2</b> launch agents · <b>1</b> privileged helper</p>
+              <p class="card-cov">{{coverageSample}}<br>Launch agents and helpers are listed, not removed.</p>
+              <p class="card-prov">macOS 26.1 · scanned 2026-10-03 · measured on this Mac, nothing sent anywhere<span>everydayopen.github.io/aftertaste</span></p>
+            </div>
+            <div class="face back">
+              <p class="card-foot">This is a list of what was found in the places listed above. It is not proof that anything was erased.</p>
+              <p class="card-nc"><span class="label">Not covered</span>keychain items · login and background item records · Launch Services and Spotlight entries · iCloud data · other users · backups and snapshots</p>
+            </div>
+          </figure>
+          <button class="button secondary report-flip" type="button" data-flip aria-controls="hero-card" aria-pressed="false" hidden>Turn the card over</button>
+        </div>
+        <button class="button stack-move" type="button" data-sweep="Reset demo" data-sweep-said="Sample: moved 2 items to the Trash. The Medium items and 2 launch agents were left where they were." data-sweep-reset="Demo reset" aria-controls="hero-scene" aria-pressed="false" hidden>Move 2 items to Trash</button>
+        <p class="sr-only" role="status" aria-live="polite" data-sweep-status></p>
+      </div>
+    </div>
+  </div>
+  <p class="caption">Illustration with sample data: the report for one of the six removed apps in the sample library. Aftertaste is not affiliated with or endorsed by any app it detects.</p>
+</section>
+
+<section class="wrap strip" aria-label="Facts">
+  <dl class="proof reveal">
+    <div><dt>permissions required</dt><dd>0</dd></div>
+    <div><dt>network calls</dt><dd>0</dd></div>
+    <div><dt>verbs: Trash and Undo</dt><dd>2</dd></div>
+    <div><dt>of moves in the journal</dt><dd><i class="dot" aria-hidden="true"></i>100%</dd></div>
+  </dl>
+</section>
+
+<section id="problem" class="wrap">
+  <div class="sec-head">
+    <h2>Finder removes the app. This is what it leaves.</h2>
+    <p class="lede">Dragging an app to the Trash removes the app itself. What it wrote in your Library stays: caches, settings, saved window state, sometimes helpers that start on their own.</p>
+  </div>
+  <div class="pair">
+    <figure class="fcol reveal" role="img" aria-label="Illustration: the folders of ~/Library after Orbit Meet moved to the Trash. Five still hold files from it: Application Support, Caches, LaunchAgents, Preferences and Saved Application State. Containers and Fonts hold none.">
+      <ul aria-hidden="true">
+        <li class="on"><span>Application Support</span></li>
+        <li class="on"><span>Caches</span></li>
+        <li><span>Containers</span></li>
+        <li><span>Fonts</span></li>
+        <li class="on"><span>LaunchAgents</span></li>
+        <li class="on"><span>Preferences</span></li>
+        <li class="on"><span>Saved Application State</span></li>
+      </ul>
+      <figcaption>Illustration: ~/Library after the app is gone. Ticks mark folders that still hold files from Orbit Meet.</figcaption>
+    </figure>
+    <article class="card group reveal" data-tilt>
+      <div class="group-top"><span class="well"><svg aria-hidden="true"><use href="#k-app"/></svg></span><b>Orbit Meet 6.2</b><span class="tag">Not installed</span></div>
+      <p class="group-stats"><strong>1.3 GB</strong><span>214 files · not installed</span></p>
+      {{orbitBar}}
+      <ul class="rows">
+        <li class="ro hi"><span class="t"><b>Caches</b><code>~/Library/Caches/com.example.orbitmeet</code></span><span class="sz">{{orbitCaches}}</span><em class="tag violet">High</em><p>Named exactly <code>com.example.orbitmeet</code>, the bundle ID of Orbit Meet. Rebuilt automatically.</p></li>
+      </ul>
+    </article>
+  </div>
+  <p class="note">Sample data. The group card is an illustration of the app, and Orbit Meet is a made-up app.</p>
+  <ul class="reports reveal">
+    <li><p>People report that cleaning up one app by name also picked up files that belong to its siblings: a browser and a mail client from the same maker, or a chat app and the rest of an office suite.</p><a href="https://github.com/alienator88/Pearcleaner/issues/393">Pearcleaner#393 · closed</a></li>
+    <li><p>People report that a second cleaning pass still finds files the first one missed.</p><a href="https://github.com/alienator88/Pearcleaner/issues/312">Pearcleaner#312 · closed</a></li>
+    <li><p>One person reports that iCloud Drive slowed down right after a cleanup run, and that Apple's consistency checker then listed hundreds of broken entries. The cause is unconfirmed.</p><a href="https://github.com/momenbasel/PureMac/issues/142">PureMac#142 · closed</a></li>
+  </ul>
+  <p class="note">Our paraphrase of three public bug reports about other cleaning tools, as they stood on 3 October 2026. The reports are theirs and we have not reproduced them. They are why Aftertaste matches exact bundle IDs first, leaves iCloud alone and ticks only what rebuilds itself or is only settings. <a href="/guides/does-uninstalling-a-mac-app-delete-everything/">What an uninstall leaves, folder by folder</a>.</p>
+</section>
+
+<section id="how" class="wrap">
+  <div class="sec-head">
+    <h2>How it decides.</h2>
+    <p class="lede">Every item carries a tier and a one-sentence reason. The tier is a word, never only a colour.</p>
+  </div>
+  <ol class="rules reveal">
+    <li><h3>The folder carries the app's exact bundle ID</h3><p>An exact match is the strongest evidence there is. It is the only thing that can make an item High.</p><code>exact id</code></li>
+    <li><h3>It rebuilds or only resets</h3><p>Caches, logs and saved window state rebuild themselves; settings only reset the app to its defaults. Only these are ticked for you, and for an app that is already gone only caches and logs.</p><code>cache · logs · state</code></li>
+    <li><h3>It may hold your data</h3><p>Application Support and Containers can hold documents, databases and recordings. Medium: unticked, and you look first.</p><code>medium</code></li>
+    <li><h3>Several apps may share it</h3><p>Vendor folders and Group Containers can belong to an app that is still installed. Review: one item at a time.</p><code>review</code></li>
+    <li><h3>It is Apple's, running, synced or protected</h3><p>Listed with the reason, never touched. Launch agents and helpers are listed too: removing them needs an administrator.</p><code>hands off</code></li>
+  </ol>
+  <p class="after">Only High is ticked when a scan appears. Medium needs the per-app "Include my data" control. Review moves one item at a time. <a href="/how-it-decides/">Read the rules in full</a>.</p>
+</section>
+
+<section id="trash" class="wrap">
+  <div class="sec-head">
+    <h2>To the Trash, with Undo.</h2>
+    <p class="lede">Tick what you want gone, read the list once more, press the button. Items go to the Trash one at a time, and every move is written down first so Undo can put it back.</p>
+  </div>
+  <ul class="slabs col reveal" data-tilt role="img" aria-label="Sample data: five rows for Orbit Meet 6.2. Caches {{orbitCaches}}, High. Logs {{orbitLogs}}, High. Your data {{orbitData}}, Medium. Launch agents 2, Hands off. Privileged helper 1, Needs admin.">
+    <li><svg aria-hidden="true"><use href="#k-cache"/></svg><span>Caches</span><b>{{orbitCaches}}</b><em class="tag violet">High</em></li>
+    <li><svg aria-hidden="true"><use href="#k-logs"/></svg><span>Logs</span><b>{{orbitLogs}}</b><em class="tag violet">High</em></li>
+    <li class="keep"><svg aria-hidden="true"><use href="#k-data"/></svg><span>Your data</span><b>{{orbitData}}</b><em class="tag">Medium</em></li>
+    <li class="listed"><svg aria-hidden="true"><use href="#k-launch"/></svg><span>Launch agents</span><b>2</b><em class="tag">Hands off</em></li>
+    <li class="listed"><svg aria-hidden="true"><use href="#k-shared"/></svg><span>Privileged helper</span><b>1</b><em class="tag">Needs admin</em></li>
+  </ul>
+  <p class="receipt reveal">Re-checked right before each move · same file, same place, app not running · <b>Trash</b>, never delete · every move in the journal · <b>Undo</b> from History until you empty the Trash</p>
+  <p class="note">Sample data. Space is freed when you empty the Trash, not before, and Aftertaste does not empty it for you.</p>
+</section>
+
+<section id="report" class="wrap">
+  <div class="sec-head">
+    <h2>A receipt with measured numbers only.</h2>
+    <p class="lede">The Trace Report is a card, a Markdown file or JSON. Every figure on it was counted on your Mac during that scan. Turn the card in the hero over to read its last line.</p>
+  </div>
+  <div class="ledger reveal">
+    <div>
+      <p class="label">On it</p>
+      <ul class="rules plain">
+        <li><h3>What was found</h3><p>The app's name and version, the number of files, their size, and how many launch agents and helpers were listed.</p></li>
+        <li><h3>Where it looked</h3><p>"{{coverageSample}}" A partial look is never called a clean result.</p></li>
+        <li><h3>When and on what</h3><p>The macOS version and the scan date. "Hide app names" swaps the names for App 1, App 2.</p></li>
+        <li><h3>One honest sentence</h3><p>"This is a list of what was found in the places listed above. It is not proof that anything was erased."</p></li>
+      </ul>
+    </div>
+    <div>
+      <p class="label">Never on it</p>
+      <ul class="rules plain">
+        <li><h3>A verdict</h3><p>No "clean", no "gone", no score. The card says what was counted and stops there.</p></li>
+        <li><h3>Your home folder's name</h3><p>Paths use <code>~</code>. The export scrubs the rest.</p></li>
+        <li><h3>An upload</h3><p>Nothing is sent. You copy the image or save it yourself.</p></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="safety" class="wrap">
+  <div class="sec-head">
+    <h2>What it reads. What it never does.</h2>
+    <p class="lede">The rules are written down, and a script in CI fails the build when code breaks one of the mechanical ones.</p>
+  </div>
+  <div class="ledger reveal">
+    <div>
+      <p class="label">Reads</p>
+      <ul class="rules plain">
+        <li><h3>Folder and file names and sizes</h3><p>In the places of your Library it lists. Never what is inside a file.</p></li>
+        <li><h3>The list of installed apps</h3><p>Their names, bundle IDs and signatures, so it knows what is still in use.</p></li>
+        <li><h3>A few small property lists</h3><p>An app's Info.plist, the launch agents you have and container labels, one file each, 1 MB at most.</p></li>
+        <li><h3>Three read-only system commands</h3><p>For the Erase readiness page: FileVault status, the disk's type and the count of local snapshots.</p></li>
+      </ul>
+    </div>
+    <div>
+      <p class="label">Never</p>
+      <ul class="rules plain">
+        <li><h3>Ask for permissions or a password</h3><p>No administrator rights and no helper. It never requires Full Disk Access. When macOS blocks a folder it says so and offers an optional Settings shortcut; it works without it. Folders macOS protects are named, not guessed.</p></li>
+        <li><h3>Connect to a network</h3><p>No telemetry, no account, no update check.</p></li>
+        <li><h3>Read file contents</h3><p>Scanning uses names, sizes and dates only.</p></li>
+        <li><h3>Delete anything</h3><p>Trash only, with Undo. No overwriting, no emptying the Trash.</p></li>
+        <li><h3>Touch iCloud or Apple's own data</h3><p>iCloud folders, Mail, Messages, Photos and Keychains are never listed as leftovers.</p></li>
+      </ul>
+    </div>
+  </div>
+  <p class="after"><a href="/what-it-reads/">Every rule, and what the log holds</a>.</p>
+</section>
+
+<section id="erase" class="wrap">
+  <div class="sec-head">
+    <h2>What no app can erase.</h2>
+    <p class="lede">Moving to the Trash does not erase anything, and no app can reach every copy of a file on a modern Mac. Here is who could still read old data, and what helps.</p>
+  </div>
+  <ul class="rules plain reveal">
+    <li><h3>Someone using your unlocked Mac</h3><p>They can open anything you can open, including the Trash and files you moved there.</p></li>
+    <li><h3>Someone with your Mac but not your password</h3><p>With FileVault on, or on a Mac that encrypts its storage, reading the disk needs your login password or recovery key.</p></li>
+    <li><h3>The next owner of your Mac</h3><p>Run Erase All Content and Settings first. Moving files to the Trash does not remove them.</p></li>
+    <li><h3>Time Machine and local snapshots</h3><p>Copies there are outside what this app can reach. The local snapshot count in Erase readiness tells you whether any exist.</p></li>
+    <li><h3>iCloud</h3><p>Copies in iCloud are managed in System Settings, not here.</p></li>
+  </ul>
+  <p class="after">Need to be sure? On a Mac that offers it, Erase All Content and Settings destroys the key. <a href="/guides/can-deleted-files-be-recovered-mac-apfs-ssd-filevault/">Why, in plain words, with sources</a>.</p>
+</section>
+
+<section id="privacy" class="wrap">
+  <div class="sec-head">
+    <h2>Nothing leaves your Mac.</h2>
+    <p class="lede">Aftertaste has no server to talk to. This website has no analytics, no cookies and no third-party requests.</p>
+  </div>
+  <ul class="privacy reveal">
+    <li><svg aria-hidden="true"><use href="#g-wifi-off"/></svg><h3>No network</h3><p>No telemetry, no account, no update check. A check in CI fails the build if a networking API appears.</p></li>
+    <li><svg aria-hidden="true"><use href="#g-lock"/></svg><h3>No permissions required</h3><p>No elevated rights. It never requires Full Disk Access. When macOS blocks a folder it says so and offers an optional Settings shortcut; it works without it.</p></li>
+    <li><svg aria-hidden="true"><use href="#g-log"/></svg><h3>A local journal</h3><p>Every move is appended to a file only you can read, so Undo works. It stays on your Mac.</p></li>
+    <li><svg aria-hidden="true"><use href="#g-hand"/></svg><h3>Names off on request</h3><p>"Hide app names" removes app names from the card and the exported report.</p></li>
+  </ul>
+</section>
+
+<section id="guides" class="wrap">
+  <div class="sec-head">
+    <h2>Guides.</h2>
+    <p class="lede">Plain answers to the questions people search for, with sources. Each works without Aftertaste.</p>
+  </div>
+  <ul class="guides reveal">
+    <li><a href="/guides/does-uninstalling-a-mac-app-delete-everything/"><code>G1</code><span><b>Does uninstalling a Mac app delete everything?</b>What the Trash removes, what stays, and where to look yourself.</span><i aria-hidden="true">→</i></a></li>
+    <li><a href="/guides/is-it-safe-to-delete-library-leftovers-mac/"><code>G2</code><span><b>Is it safe to delete ~/Library leftovers?</b>Which folders come back by themselves and which may hold your only copy.</span><i aria-hidden="true">→</i></a></li>
+    <li><a href="/guides/can-deleted-files-be-recovered-mac-apfs-ssd-filevault/"><code>G3</code><span><b>Can deleted files be recovered on a Mac?</b>APFS, SSDs, snapshots, iCloud and FileVault, without the folklore.</span><i aria-hidden="true">→</i></a></li>
+  </ul>
+</section>
+
+<section id="faq" class="wrap">
+  <div class="faq">
+    <div class="faq-head">
+      <p class="eyebrow"><b>02</b> · Questions</p>
+      <h2>Before you try it.</h2>
+      <p class="lede">Short answers. The long ones are in the guides and on the rules pages.</p>
+    </div>
+    <div class="faq-list reveal">
+      <details><summary>Does dragging an app to the Trash remove everything?</summary><p>No. It removes the app. The caches, preferences, saved state and containers the app wrote in your Library stay, and so can launch agents and helpers. In the Homebrew cask data, 4,734 casks list leftover paths to remove, and about three in four of those name a Preferences file. <a href="/guides/does-uninstalling-a-mac-app-delete-everything/">The folder-by-folder answer</a>.</p></details>
+      <details><summary>Will this delete my documents?</summary><p>It never deletes: items go to the Trash and Undo puts them back until you empty it. Documents can still sit inside Application Support or a Container, so those are Medium: unticked, labelled "may be your only copy" where that is likely, and moved only after an extra switch and a tick.</p></details>
+      <details><summary>Why is something listed but not ticked?</summary><p>Only items that rebuild themselves or are only settings, and carry the app's exact bundle ID, are ticked. Everything else is listed with its reason so you can decide: Medium may hold your data, Review may be shared, Hands off and Needs admin are never moved.</p></details>
+      <details><summary>Why can't it remove a launch agent?</summary><p>Deleting the file does not stop a job that is already loaded, and stopping one needs a command Aftertaste never runs. System-wide ones need an administrator. They are listed with the reason, and you can reveal the file in Finder.</p></details>
+      <details><summary>Does it need Full Disk Access?</summary><p>No. It never requires Full Disk Access. When macOS blocks a folder it says so and offers an optional Settings shortcut; it works without it. macOS protects some folders, mostly Containers and Group Containers, and what an ordinary app can read there differs between versions. When a folder cannot be read, the report says "protected by macOS" and the coverage line counts it, instead of saying nothing was found.</p></details>
+      <details><summary>Has it run on a real Mac?</summary><p>{{statusFaq}}</p></details>
+      <details><summary>Is it really free?</summary><p>Yes. MIT licence, no account, no trial, no paid tier. The source is on <a href="https://github.com/{{releasesRepo}}">GitHub</a>.</p></details>
+      <details><summary>Why is the app unsigned?</summary><p>Until there is a Developer ID, public builds are unsigned betas, so macOS asks for one extra step the first time you open it. The <a href="/download/">download page</a> shows it, with a checksum to compare.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="finale dawn" aria-labelledby="finale-h">
+  <i class="horizon" aria-hidden="true"></i>
+  <div class="wrap">
+    <div class="podium"><img class="icon" src="/icon.png" width="176" height="176" alt="Aftertaste app icon" loading="lazy" decoding="async"></div>
+    <h2 id="finale-h">See what's left. It's free.</h2>
+    <p class="actions"><a class="button" href="/download/"><svg aria-hidden="true"><use href="#i-down"/></svg><span class="sep"></span>Download free</a> <a class="button secondary" href="https://github.com/{{releasesRepo}}">View source</a></p>
+    <p class="facts">macOS {{minMacOS}} or later · Apple silicon and Intel · MIT licence · {{statusShort}}</p>
+  </div>
+</section>

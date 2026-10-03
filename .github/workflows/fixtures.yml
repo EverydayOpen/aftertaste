@@ -1,0 +1,141 @@
+# The probe workflow (docs/BUILD_PLAN.md section 6.4): run the real-filesystem tests and a set of read-only probes on GitHub's
+# arm64 and Intel macOS runners, and upload what they saw, so the VERIFY items in section 12 are settled against real macOS
+# output without owning a Mac. Day-1 workflow; weekly afterwards to notice when a new runner image changes behaviour.
+#
+# Using the result: download the probe-* artifacts from the run. Each probe has <name>.stdout, <name>.stderr and <name>.exit;
+# probe-trash.txt is the answer to "does FileManager.trashItem work in a headless runner session, and what does it do to a
+# symlink?". The outputs of the command probes become parser fixtures under Tests/AftertasteCoreTests/Fixtures/commands/.
+# Real laptops come from testers' Help > Copy Diagnostics: the runners are fresh virtual machines with no third-party
+# containers, no Time Machine, no iCloud and no FileVault, so they cannot answer the Containers question (BUILD_PLAN section 12).
+#
+# Everything here only reads, except the trash probe, which moves files it created itself in a temporary folder under the
+# runner's home to the Trash and back.
+name: fixtures
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 4 * * 1"   # Mondays: a fresh dump to compare by hand
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-26, macos-15-intel]   # arm64, and the last Intel image (supported until Aug 2027)
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Command probes (stdout, stderr and exit status of each)
+        run: |
+          mkdir -p out
+          # rec NAME COMMAND...  ->  out/NAME.stdout, NAME.stderr, NAME.exit (never fails the step: a refusal is the data)
+          rec() { local n=$1 rc=0; shift; "$@" > "out/$n.stdout" 2> "out/$n.stderr" || rc=$?; echo "$rc" > "out/$n.exit"; }
+          { sw_vers; uname -m; echo "runner image: $ImageOS $ImageVersion"; } > out/about.txt
+          rec fdesetup /usr/bin/fdesetup status
+          rec diskutil-info /usr/sbin/diskutil info -plist /
+          rec tmutil-snapshots /usr/bin/tmutil listlocalsnapshots /
+          rec pkgutil-pkgs /usr/sbin/pkgutil --pkgs
+          rec library-listing ls -le@ "$HOME/Library"
+          for d in "Preferences" "Preferences/ByHost" "Caches" "Application Support" "Containers" "Group Containers" "Logs" \
+                   "Logs/DiagnosticReports" "Saved Application State" "HTTPStorages" "WebKit" "Cookies" "LaunchAgents" \
+                   "Application Scripts" "SyncedPreferences" "Autosave Information" \
+                   "Application Support/CrashReporter" \
+                   "Application Support/com.apple.sharedfilelist/com.apple.LSSharedFileList.ApplicationRecentDocuments"; do
+            n="root-$(echo "$d" | tr ' /' '__')"
+            rec "$n" ls -1A "$HOME/Library/$d"
+          done
+          for d in "/Library/Application Support" "/Library/Caches" "/Library/Preferences" "/Library/LaunchAgents" \
+                   "/Library/LaunchDaemons" "/Library/PrivilegedHelperTools" "/Library/Logs" "/private/var/db/receipts"; do
+            n="system-$(echo "$d" | tr ' /' '__')"
+            rec "$n" ls -1A "$d"
+          done
+          rec containers-listing ls -1A "$HOME/Library/Containers" "$HOME/Library/Group Containers"
+          # Names only; never file contents. The point is which listings an ordinary process may read (the exit status).
+          rec applications ls -1A /Applications /Applications/Utilities "$HOME/Applications" /System/Applications
+
+      - name: Swift probes (trashItem on a file, a symlink and a folder; opendir; Bundle and Launch Services)
+        run: |
+          cat > "$RUNNER_TEMP/probe.swift" <<'SWIFT'
+          import AppKit
+          import Foundation
+
+          let fm = FileManager.default
+          let home = NSHomeDirectory()
+          var lines: [String] = []
+          func note(_ s: String) { lines.append(s) }
+
+          // 1. trashItem on a file, a symlink (the link must move, the target must stay) and a folder; then move each back.
+          let dir = home + "/aftertaste-probe-\(getpid())"
+          try? fm.createDirectory(atPath: dir, withIntermediateDirectories: true)
+          let file = dir + "/f.txt", target = dir + "/target.txt", link = dir + "/link", folder = dir + "/Folder"
+          fm.createFile(atPath: file, contents: Data("x".utf8))
+          fm.createFile(atPath: target, contents: Data("t".utf8))
+          try? fm.createSymbolicLink(atPath: link, withDestinationPath: target)
+          try? fm.createDirectory(atPath: folder, withIntermediateDirectories: true)
+          fm.createFile(atPath: folder + "/inner.txt", contents: Data("i".utf8))
+          for (name, path) in [("file", file), ("symlink", link), ("folder", folder)] {
+              var resulting: NSURL?
+              do {
+                  try fm.trashItem(at: URL(fileURLWithPath: path), resultingItemURL: &resulting)
+                  let moved = (resulting as URL?)?.path ?? "nil"
+                  note("trashItem \(name): ok; resultingItemURL under ~/.Trash: \(moved.hasPrefix(home + "/.Trash/"))")
+                  note("  original still there: \(fm.fileExists(atPath: path)); target still there: \(fm.fileExists(atPath: target))")
+                  if moved != "nil" {
+                      do { try fm.moveItem(atPath: moved, toPath: path); note("  moveItem back: ok; original exists again: \(fm.fileExists(atPath: path))") }
+                      catch { note("  moveItem back: error \(error)") }
+                  }
+              } catch { note("trashItem \(name): error \(error)") }
+          }
+
+          // 2. A minimal fake app moved into the Trash: does Bundle(url:) still read it, and does Launch Services still list its ID?
+          let appPath = dir + "/Probe.app"
+          try? fm.createDirectory(atPath: appPath + "/Contents", withIntermediateDirectories: true)
+          let info: [String: Any] = ["CFBundleIdentifier": "com.example.aftertasteprobe", "CFBundleName": "Probe", "CFBundleExecutable": "Probe", "CFBundlePackageType": "APPL"]
+          (info as NSDictionary).write(toFile: appPath + "/Contents/Info.plist", atomically: true)
+          var trashedApp: NSURL?
+          if (try? fm.trashItem(at: URL(fileURLWithPath: appPath), resultingItemURL: &trashedApp)) != nil, let t = trashedApp as URL? {
+              note("fake app trashed; Bundle(url:) bundleIdentifier: \(Bundle(url: t)?.bundleIdentifier ?? "nil")")
+              let found = NSWorkspace.shared.urlsForApplications(withBundleIdentifier: "com.example.aftertasteprobe")
+              note("urlsForApplications(withBundleIdentifier:) count: \(found.count)")
+              try? fm.moveItem(atPath: t.path, toPath: appPath)
+          } else { note("fake app: trashItem failed") }
+          try? fm.removeItem(atPath: dir)   // probe-only cleanup of the files this script created
+
+          // 3. Which protected folders can an ordinary process open? (the Full Disk Access probe, BUILD_PLAN section 5.3)
+          for name in ["Safari", "Mail", "Messages", "Containers", "Group Containers"] {
+              let p = home + "/Library/" + name
+              if let d = opendir(p) { closedir(d); note("opendir ~/Library/\(name): ok") }
+              else { note("opendir ~/Library/\(name): errno \(errno)") }
+          }
+          print(lines.joined(separator: "\n"))
+          SWIFT
+          swift "$RUNNER_TEMP/probe.swift" > out/probe-trash.txt 2> out/probe-trash.stderr || echo "probe exit $?" >> out/probe-trash.txt
+          cat out/probe-trash.txt
+
+      - name: swift test
+        run: swift test 2>&1 | tee out/swift-test.log
+
+      - name: Summary
+        if: always()
+        run: |
+          cat out/about.txt || true
+          for n in fdesetup diskutil-info tmutil-snapshots; do echo "== $n: exit $(cat out/$n.exit 2>/dev/null)"; head -5 "out/$n.stdout" 2>/dev/null; head -3 "out/$n.stderr" 2>/dev/null; done
+          grep -E "skipped|XCTSkip" out/swift-test.log || true
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: probe-${{ matrix.runner }}
+          path: out/
+          if-no-files-found: error
