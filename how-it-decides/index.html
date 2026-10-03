@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>How Aftertaste decides what belongs to an app</title>
+<meta name="description" content="The rules Aftertaste uses to match a leftover to an app: an exact bundle ID, what rebuilds itself, what may hold your data, what may be shared, and what is never touched. Five tiers, each with the reason shown.">
+<link rel="canonical" href="https://everydayopen.github.io/aftertaste/how-it-decides/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f5fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0e15" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Aftertaste">
+<meta property="og:title" content="How Aftertaste decides what belongs to an app">
+<meta property="og:description" content="The rules Aftertaste uses to match a leftover to an app: an exact bundle ID, what rebuilds itself, what may hold your data, what may be shared, and what is never touched. Five tiers, each with the reason shown.">
+<meta property="og:url" content="https://everydayopen.github.io/aftertaste/how-it-decides/">
+<meta property="og:image" content="https://everydayopen.github.io/aftertaste/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sample data: a Trace Report card with two fading outlines behind it. Orbit Meet 6.2 left behind: 214 files, 1.3 GB, 2 launch agents, 1 privileged helper. Looked in 25 of 26 places. 1 protected by macOS.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="/aftertaste/favicon.png">
+<link rel="apple-touch-icon" href="/aftertaste/apple-touch-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Aftertaste changelog" href="/aftertaste/feed.xml">
+<link rel="stylesheet" href="/aftertaste/styles.css">
+<script src="/aftertaste/motion.js" defer></script>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M4.5 19.5h15"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="3.4 2.8" d="M11 5H7.5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3v-4"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2.2" fill="currentColor"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></g></symbol>
+  <symbol id="k-app" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="k-cache" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4.5 7.5h15M4.5 12h15M4.5 16.5h15"/></symbol>
+  <symbol id="k-logs" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M8.5 9h7M8.5 13h7M8.5 17h4"/></g></symbol>
+  <symbol id="k-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2.2"/><circle cx="15" cy="16" r="2.2"/></g></symbol>
+  <symbol id="k-state" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9.5h17"/></g></symbol>
+  <symbol id="k-data" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="k-launch" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M10 8.5l5 3.5-5 3.5z"/></g></symbol>
+  <symbol id="k-shared" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="12" height="12" rx="3"/><rect x="8.5" y="8.5" width="12" height="12" rx="3"/></g></symbol>
+  <symbol id="g-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></g></symbol>
+  <symbol id="g-wifi-off" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 9.5a14 14 0 0 1 18 0M6 13a9.5 9.5 0 0 1 12 0M9.2 16.4a5 5 0 0 1 5.6 0M12 19.5h.01M4 4l16 16"/></symbol>
+  <symbol id="g-log" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13H6z"/><path d="M14.5 3.5v4.5H19M9 12.5h7M9 16h5"/></g></symbol>
+  <symbol id="g-hand" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></g></symbol>
+</svg>
+<header class="site-header">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="/aftertaste/"><img src="/aftertaste/favicon.png" width="28" height="28" alt=""><span>Aftertaste</span></a>
+    <ul class="nav-links">
+      <li><a href="/aftertaste/how-it-decides/">How it decides</a></li>
+      <li><a href="/aftertaste/what-it-reads/">What it reads</a></li>
+      <li><a href="/aftertaste/guides/">Guides</a></li>
+    </ul>
+    <a class="button secondary small" href="https://github.com/EverydayOpen/aftertaste" rel="noopener">Source</a>
+    <a class="button small" href="/aftertaste/download/">Download</a>
+  </nav>
+</header>
+<main id="main" tabindex="-1">
+<article class="read prose">
+  <p class="eyebrow"><b>03</b> · How it decides</p>
+  <h1>How Aftertaste decides what belongs to an app</h1>
+  <p class="lede">Every item gets a tier and a one-sentence reason. Nothing can raise a tier above the ceiling of its folder's rule, and any doubt lowers it. When the evidence is thin, the item is listed and left alone.</p>
+  <p class="note">These rules describe the code in the repository. In development. No public release yet. The rules will change as testers find matches that are wrong; the changelog will say so.</p>
+
+  <div class="summary">
+    <h2>The short version</h2>
+    <ol>
+      <li>The item sits directly in a Library folder that Aftertaste knows about, or is a launch item or receipt that names the app.</li>
+      <li>Its name carries the app's <b>exact bundle ID</b>, or a system record proves the link. A name that only looks like the app is the weakest evidence.</li>
+      <li>No installed app owns it, nothing is running from it, and it is not on the never-touch list.</li>
+      <li>Only items that rebuild themselves or are only settings reach <b>High</b>, and only High is ticked for you.</li>
+    </ol>
+    <p>Everything else is shown with its reason: <b>Medium</b> may hold your data, <b>Review</b> may be shared, <b>Hands off</b> and <b>Needs admin</b> are never moved.</p>
+  </div>
+
+  <h2 id="protected">Before any rule: what is never touched</h2>
+  <p>Aftertaste asks first whether an item may be touched at all. These are listed with the reason where it helps, and they have no checkbox. The list is fixed in the code; your own keep-list can only add to it.</p>
+  <pre><code>~/Library/Mobile Documents, CloudStorage, CloudDocs, FileProvider (iCloud)
+~/Library/Keychains, Mail, Messages, Safari, Photos, Accounts, AddressBook
+Photos libraries, device backups (MobileSync), ~/.Trash, ~/Library/Developer
+anything named com.apple.* (except Xcode, iWork and a few developer tools)
+/System, /usr, /bin, /sbin, /private (receipts are shown, read-only)
+anything an installed app owns or shares, anything whose app is running
+a link that leads outside the Library, a locked item, a mounted drive
+Aftertaste's own journal, inventory and preferences
+the apps and folders on your own keep-list</code></pre>
+
+  <h2 id="match">How strong is the match?</h2>
+  <ol class="rules">
+    <li><h3>Exact</h3><p>The name is the bundle ID, the ID plus a known extension (<code>.plist</code>, <code>.savedState</code>), or a Team ID plus the ID. This can reach High.</p><code>exact id</code></li>
+    <li><h3>Proven</h3><p>A system record names the app: a launch agent whose program sits inside the removed app, a container whose label names the ID, an installer receipt. This can reach High where the folder's rule allows it.</p><code>proof</code></li>
+    <li><h3>Structural</h3><p>A helper suffix such as <code>.helper</code> or <code>.updater</code>, or a developer-ID prefix. Medium at best, because other apps from the same developer use the same names.</p><code>medium</code></li>
+    <li><h3>By name</h3><p>The app's display name at a word boundary, at least five characters, and not a common word such as Notes or Music. Review at best, never ticked.</p><code>review</code></li>
+  </ol>
+  <p>There is no fuzzy matching. If nothing above applies, the item is not listed as the app's at all.</p>
+
+  <h2 id="tiers">The tiers, with an example each</h2>
+  <p>Every row in the app carries a reason, and these are the words the sample data shows, from a scan for removed apps. The examples use made-up apps.</p>
+  <ul class="rows card">
+    <li class="ro hi"><span class="t"><b>Caches</b><code>~/Library/Caches/com.example.orbitmeet</code></span><span class="sz">412 MB</span><em class="tag violet">High</em><p>Named exactly com.example.orbitmeet; no installed app has this ID. Last seen installed on 2026-08-02. Not changed for 62 days.</p></li>
+    <li class="ro"><span class="t"><b>Application Support</b><code>~/Library/Application Support/com.example.orbitmeet</code></span><span class="sz">796 MB</span><em class="tag">Medium</em><p>Named exactly com.example.orbitmeet; no installed app has this ID. Last seen installed on 2026-08-02. Not changed for 70 days.</p></li>
+    <li class="ro"><span class="t"><b>Application Support</b><code>~/Library/Application Support/Quill Editor</code></span><span class="sz">54 MB</span><em class="tag">Review</em><p>Named like the app (Quill Editor); nothing else confirms it. No installed app has this ID. Last seen installed on 2026-06-05. Not changed for 120 days.</p></li>
+    <li class="ro"><span class="t"><b>Group Containers</b><code>~/Library/Group Containers/H7J6K5L4M3.glow</code></span><span class="sz">18 MB</span><em class="tag">Hands off</em><p>Starts with the developer ID H7J6K5L4M3. Other apps from the same developer may use it. No installed app has this ID. Last seen installed on 2026-07-20. Not changed for 75 days. Another app from the same developer (Glow Camera) is still installed, so this is not preselected. Another installed app uses this.</p></li>
+    <li class="ro"><span class="t"><b>Privileged helper</b><code>/Library/PrivilegedHelperTools/com.example.harborvpn.helper</code></span><span class="sz">1.5 MB</span><em class="tag">Needs admin</em><p>Its label (com.example.harborvpn.helper) starts with Harbor VPN's bundle ID. No installed app has this ID. Last seen installed on 2026-06-25. Not changed for 100 days. Needs your administrator. Reveal in Finder or copy the path.</p></li>
+  </ul>
+  <p>Launch agents are Hands off in this version, even with proof: "Listed only. Removing the file would not stop a job that is already loaded." Only High is ticked when a scan appears. Medium needs the per-app "Include my data" control and a tick in the confirm sheet. Review moves one item at a time, each with its own confirmation.</p>
+
+  <h2 id="shared">Shared folders</h2>
+  <p>Vendor folders such as Adobe, Microsoft, Google, Mozilla and JetBrains, shared updater caches, and Group Containers that several apps of one developer use can never rise above Review while another app might still need them. If one app of a suite is installed, the folder is Hands off. Items that look like they may be your only copy (wallets, vaults, backups, virtual machines, anything over 5 GB) are Review at most and never part of a bulk move.</p>
+
+  <h2 id="gone">When the app is already gone</h2>
+  <p>Without the app, its Info.plist and signature are gone too, so Aftertaste keeps an inventory of what was installed and matches against that. In a scan for apps that are gone, an item reaches High only if it is a cache or a log with an exact ID name, no installed app has that ID, it has not changed for 30 days, and no drive that could hold apps is unplugged. Everything else is Medium at most. If a drive is missing, nothing is above Review.</p>
+
+  <h2 id="bar">One bar per app</h2>
+  <p>The preview draws each app as one bar. Each class has a segment sized by its bytes, with a floor width so small ones stay visible, and the words live in the legend underneath so nothing is cut off. A violet edge marks High.</p>
+  <div class="card group">
+    <div class="rbar" role="img" aria-label="Sample data: one bar for Orbit Meet 6.2. High, selected: caches 412 MB, logs 22.4 MB. Medium, not selected: saved state, WebKit 65.3 MB; web storage, settings 1.6 MB; your data 796 MB. 2 launch agents, listed only."><i class="hi"></i><i class="hi"></i><i></i><i></i><i></i><i></i></div>
+    <ul class="rbar-key" aria-hidden="true"><li class="hi">Caches 412 MB</li><li class="hi">Logs 22.4 MB</li><li>Saved state, WebKit 65.3 MB</li><li>Web storage, settings 1.6 MB</li><li>Your data 796 MB</li><li>Launch agents 2</li></ul>
+    <p class="rbar-sum">435 MB selected (rebuilds itself) · 863 MB not selected · 2 launch agents listed</p>
+  </div>
+  <p class="note">Sample data for a made-up app.</p>
+
+  <h2 id="not-covered">What it does not look at</h2>
+  <p>Not covered: keychain items, login and background item records, Launch Services and Spotlight entries, iCloud data, other users, backups and snapshots. Every preview and report also says how many places it could read: "Looked in 25 of 26 places. 1 protected by macOS." It says "Nothing found" only when it looked everywhere.</p>
+
+  <h2 id="wrong">It got one wrong</h2>
+  <p>A match that lists something you still need is a bug we want to hear about. Open the form, say which item and which app, and never paste secrets.</p>
+  <p class="actions"><a class="button" href="https://github.com/EverydayOpen/aftertaste/issues/new?template=wrong-match.yml" rel="noopener">Report a wrong match</a> <a class="button secondary" href="https://github.com/EverydayOpen/aftertaste/blob/main/Sources/AftertasteCore/Rules/ResidueRules.swift" rel="noopener">Read the rules</a></p>
+  <p class="note">Aftertaste is not affiliated with or endorsed by any app it detects. App names in the examples are made up.</p>
+</article>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-cols">
+      <div>
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/aftertaste/download/">Download</a></li>
+          <li><a href="/aftertaste/changelog/">Changelog</a></li>
+          <li><a href="https://github.com/EverydayOpen/aftertaste" rel="noopener">Source code</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>How it works</h2>
+        <ul>
+          <li><a href="/aftertaste/how-it-decides/">How it decides</a></li>
+          <li><a href="/aftertaste/what-it-reads/">What it reads, what it never does</a></li>
+          <li><a href="/aftertaste/what-it-reads/#privacy">Privacy</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Guides</h2>
+        <ul>
+          <li><a href="/aftertaste/guides/does-uninstalling-a-mac-app-delete-everything/">What an uninstall leaves</a></li>
+          <li><a href="/aftertaste/guides/is-it-safe-to-delete-library-leftovers-mac/">Library leftovers</a></li>
+          <li><a href="/aftertaste/guides/can-deleted-files-be-recovered-mac-apfs-ssd-filevault/">Recovery on a Mac</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Help</h2>
+        <ul>
+          <li><a href="https://github.com/EverydayOpen/aftertaste/issues" rel="noopener">Report a problem</a></li>
+          <li><a href="https://github.com/EverydayOpen/aftertaste/issues/new?template=wrong-match.yml" rel="noopener">Report a wrong match</a></li>
+          <li><a href="https://github.com/EverydayOpen/aftertaste/security/policy" rel="noopener">Security policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="official"><svg aria-hidden="true"><use href="#i-check"/></svg><span>The only official site is https://everydayopen.github.io/aftertaste. Downloads come only from github.com/EverydayOpen/aftertaste/releases.</span></p>
+    <p class="fine"><a class="tag plain" href="/aftertaste/changelog/">1.0 coming soon</a>© 2026 EverydayOpen. Aftertaste is free and open source under the MIT License.</p>
+    <p class="fine">Aftertaste is not affiliated with or endorsed by any app it detects. Their names appear only to say what Aftertaste looks for. Apple, Mac and macOS are trademarks of Apple Inc.</p>
+  </div>
+</footer>
+</body>
+</html>

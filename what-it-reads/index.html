@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>What Aftertaste reads, and what it never does</title>
+<meta name="description" content="Everything Aftertaste reads, everything it never does, how a move to the Trash works step by step, the safety rules it is built under, what its journal holds, and what this website collects (nothing). Free, open source, offline.">
+<link rel="canonical" href="https://everydayopen.github.io/aftertaste/what-it-reads/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f5fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0e15" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Aftertaste">
+<meta property="og:title" content="What Aftertaste reads, and what it never does">
+<meta property="og:description" content="Everything Aftertaste reads, everything it never does, how a move to the Trash works step by step, the safety rules it is built under, what its journal holds, and what this website collects (nothing). Free, open source, offline.">
+<meta property="og:url" content="https://everydayopen.github.io/aftertaste/what-it-reads/">
+<meta property="og:image" content="https://everydayopen.github.io/aftertaste/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sample data: a Trace Report card with two fading outlines behind it. Orbit Meet 6.2 left behind: 214 files, 1.3 GB, 2 launch agents, 1 privileged helper. Looked in 25 of 26 places. 1 protected by macOS.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="/aftertaste/favicon.png">
+<link rel="apple-touch-icon" href="/aftertaste/apple-touch-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Aftertaste changelog" href="/aftertaste/feed.xml">
+<link rel="stylesheet" href="/aftertaste/styles.css">
+<script src="/aftertaste/motion.js" defer></script>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M4.5 19.5h15"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="3.4 2.8" d="M11 5H7.5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3v-4"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2.2" fill="currentColor"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></g></symbol>
+  <symbol id="k-app" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="k-cache" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4.5 7.5h15M4.5 12h15M4.5 16.5h15"/></symbol>
+  <symbol id="k-logs" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M8.5 9h7M8.5 13h7M8.5 17h4"/></g></symbol>
+  <symbol id="k-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2.2"/><circle cx="15" cy="16" r="2.2"/></g></symbol>
+  <symbol id="k-state" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9.5h17"/></g></symbol>
+  <symbol id="k-data" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="k-launch" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M10 8.5l5 3.5-5 3.5z"/></g></symbol>
+  <symbol id="k-shared" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="12" height="12" rx="3"/><rect x="8.5" y="8.5" width="12" height="12" rx="3"/></g></symbol>
+  <symbol id="g-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></g></symbol>
+  <symbol id="g-wifi-off" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 9.5a14 14 0 0 1 18 0M6 13a9.5 9.5 0 0 1 12 0M9.2 16.4a5 5 0 0 1 5.6 0M12 19.5h.01M4 4l16 16"/></symbol>
+  <symbol id="g-log" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13H6z"/><path d="M14.5 3.5v4.5H19M9 12.5h7M9 16h5"/></g></symbol>
+  <symbol id="g-hand" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></g></symbol>
+</svg>
+<header class="site-header">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="/aftertaste/"><img src="/aftertaste/favicon.png" width="28" height="28" alt=""><span>Aftertaste</span></a>
+    <ul class="nav-links">
+      <li><a href="/aftertaste/how-it-decides/">How it decides</a></li>
+      <li><a href="/aftertaste/what-it-reads/">What it reads</a></li>
+      <li><a href="/aftertaste/guides/">Guides</a></li>
+    </ul>
+    <a class="button secondary small" href="https://github.com/EverydayOpen/aftertaste" rel="noopener">Source</a>
+    <a class="button small" href="/aftertaste/download/">Download</a>
+  </nav>
+</header>
+<main id="main" tabindex="-1">
+<article class="read prose">
+  <p class="eyebrow"><b>04</b> · What it reads</p>
+  <h1>What Aftertaste reads, and what it never does</h1>
+  <p class="lede">Aftertaste moves other apps' files, so a bug could take the wrong thing. These are the rules it is built under. Most of the mechanical ones are checked by scripts that run in CI and fail the build when code breaks them.</p>
+  <p class="note">In development. No public release yet. The matching and planning logic has automated tests. Nothing has run on a real Mac with a real Library yet, so read everything described here as the design, not as proof that it works. The changelog will say what testers have tried.</p>
+
+  <div class="summary">
+    <h2>The short version</h2>
+    <ul>
+      <li><b>Two verbs.</b> Move to Trash and Undo. Nothing is deleted, overwritten or emptied.</li>
+      <li><b>Preview first.</b> Nothing moves until you press the button for the items you ticked.</li>
+      <li><b>Only what rebuilds itself or is only settings is ticked,</b> and every item is checked again right before it moves.</li>
+      <li><b>Nothing leaves your Mac.</b> No network, no account, no telemetry, no helper, no administrator rights.</li>
+      <li><b>It says where it could not look,</b> and what no app can erase.</li>
+    </ul>
+  </div>
+
+  <h2 id="reads">What it reads</h2>
+  <ul class="rules plain">
+    <li><h3>Names, sizes and dates</h3><p>It lists folders and files in the Library places it knows (caches, preferences, application support, containers, saved state, logs, launch agents and a few more) and notes their size and dates. It never opens a file to read what is in it.</p></li>
+    <li><h3>The installed apps</h3><p>The Applications folders, to learn each app's name, bundle ID, version and, from its signature, its developer ID and app groups. This is how it tells an app that is gone from one that is still in use.</p></li>
+    <li><h3>A few small property lists</h3><p>An app's Info.plist, the launch agent files in your LaunchAgents folder, and the label file inside a container. One regular file each, never a link, 1 MB at most.</p></li>
+    <li><h3>Which apps and programs are running</h3><p>So it can refuse to move anything whose app is running. If it cannot tell, it treats the item as running.</p></li>
+    <li><h3>Three read-only system facts</h3><p>For the Erase readiness page: whether FileVault is on, whether the disk is flash or spinning, and how many local snapshots exist. See <a href="#commands">the three commands</a>.</p></li>
+  </ul>
+
+  <h2 id="never">What it never does</h2>
+  <ul class="rules plain">
+    <li><h3>Ask for permissions</h3><p>No Accessibility, Automation or administrator password, and no helper. It never requires Full Disk Access. When macOS blocks a folder it says so and offers an optional Settings shortcut; it works without it. Aftertaste is not sandboxed, because a sandboxed app cannot see other apps' leftovers, and it needs no entitlement. Some macOS versions protect other apps' Containers and Group Containers. Those folders are named as "protected by macOS" and counted in the coverage line, never guessed at.</p></li>
+    <li><h3>Use the network</h3><p>No telemetry, no account, no update check. "Check for updates" opens the releases page in your browser, and only when you click it. A script rejects the common networking APIs in CI.</p></li>
+    <li><h3>Read file contents</h3><p>Scanning uses names, sizes and dates. When iCloud has not downloaded a file, it records that and moves on.</p></li>
+    <li><h3>Delete, overwrite or empty</h3><p>Items go to the Trash and nothing else happens to them. There is no overwriting, no emptying of the Trash, no permanent removal, and no command that deletes.</p></li>
+    <li><h3>Touch iCloud, Apple's data or its own</h3><p>iCloud folders, Keychains, Mail, Messages, Photos and anything named com.apple.* are never listed as leftovers. Aftertaste never moves its own journal, inventory or preferences.</p></li>
+    <li><h3>Change a setting or a process</h3><p>It does not toggle iCloud or system settings, change permissions, stop or signal a process, or run a launch command. Launch agents, daemons and privileged helpers are listed, not removed.</p></li>
+    <li><h3>Run a shell</h3><p>The only programs it starts are the three below, by absolute path, with a fixed argument list.</p></li>
+    <li><h3>Promise what it cannot</h3><p>It reports what was found and what moved. It does not say your Mac is clean, and it does not say anything is gone for good.</p></li>
+  </ul>
+
+  <h2 id="move">How a move works</h2>
+  <ol class="rules">
+    <li><h3>You confirm exactly what will move</h3><p>The confirm sheet lists every item in plain words. Medium items need the per-app "Include my data" control and an acknowledgement. Review items run one at a time.</p><code>confirm</code></li>
+    <li><h3>Each item is checked again, right before it moves</h3><p>Same device, file number, type, size and date as at the scan. Its folder is an allowed Library folder, it is not a link that leads elsewhere, it is local, unlocked and not an iCloud placeholder, and its app is not running. If anything changed, the item is skipped and the journal says so.</p><code>lstat</code></li>
+    <li><h3>The journal gets a line first</h3><p>An intent line is written and flushed before the move, a result line after. If the journal cannot be opened for appending, nothing moves.</p><code>0600</code></li>
+    <li><h3>The item goes to the Trash</h3><p>One item at a time, with the system's own call. Nothing in the Library is removed in any other way.</p><code>trashItem</code></li>
+    <li><h3>Undo puts it back</h3><p>History moves the item from the Trash to the place it came from, using the location the system recorded. It never overwrites: if something is already there, it offers to reveal the item in the Trash instead.</p><code>undo</code></li>
+  </ol>
+  <p>The call that moves an item to the Trash lives in one source file, <a href="https://github.com/EverydayOpen/aftertaste/blob/main/Sources/AftertasteMac/Trasher.swift" rel="noopener"><code>Trasher.swift</code></a>, and CI fails if it appears anywhere else.</p>
+
+  <h2 id="rules">The safety rules</h2>
+  <ol class="rules">
+    <li><h3>Two verbs only</h3><p>Move to Trash, and Undo. No remove, unlink or delete call exists in the code, and a check fails the build if one appears.</p><code>trashItem</code></li>
+    <li><h3>The preview is mandatory</h3><p>Only a plan built from a scan you saw in this session can run, and only for the items you ticked. No one-click, background, scheduled or on-launch clean.</p><code>plan</code></li>
+    <li><h3>Only High is ticked</h3><p>Medium needs a switch and an acknowledgement. Review runs alone. Hands off and Needs admin have no checkbox.</p><code>high</code></li>
+    <li><h3>Every item must pass the guard</h3><p>An immediate child of an allowed folder, never a followed link, the same disk as its folder, a local volume, not locked, not on the never-touch list, owned by you.</p><code>lstat</code></li>
+    <li><h3>Running means blocked</h3><p>If the app, or any program run from inside it, is running, its items do not move. Aftertaste never quits or signals anything.</p><code>running</code></li>
+    <li><h3>Shared data is protected</h3><p>Group Containers, vendor folders and plug-ins stay Review or Hands off while another app may need them.</p><code>shared</code></li>
+    <li><h3>iCloud is hands off</h3><p>Its folders are never listed, scanned or touched. A move there would sync to every device.</p><code>icloud</code></li>
+    <li><h3>The journal fails closed</h3><p>A file only you can read, one per month, append-only, in a folder only you can open.</p><code>0600</code></li>
+    <li><h3>Links and mounts are not followed</h3><p>A link is the item, never its target. Nothing crosses onto another disk.</p><code>O_NOFOLLOW</code></li>
+    <li><h3>Unknown means no</h3><p>An unreadable identity, an unknown volume type, a running state it cannot determine or a guard failure makes the item Hands off, or stops the run.</p><code>fail closed</code></li>
+    <li><h3>No overwriting in version 1</h3><p>Aftertaste does not fill free space and does not overwrite files. On flash storage that would not do what it sounds like. <a href="/aftertaste/guides/can-deleted-files-be-recovered-mac-apfs-ssd-filevault/">Why</a>.</p><code>none</code></li>
+    <li><h3>No shell, three commands</h3><p>Absolute paths, argument lists, read-only.</p><code>3 commands</code></li>
+  </ol>
+
+  <h2 id="commands">The three commands</h2>
+  <p>The Erase readiness page runs exactly these, with nothing added, and reads their output. They change nothing.</p>
+  <pre><code>/usr/bin/fdesetup status
+/usr/sbin/diskutil info -plist /
+/usr/bin/tmutil listlocalsnapshots /</code></pre>
+
+  <h2 id="log">The journal</h2>
+  <p>Every item of every run, including skipped and failed ones, is appended to a file in <code>~/Library/Application Support/Aftertaste/</code>, one per month, readable only by you and never inside iCloud. A line holds the time, what was done, the item's path under your home folder, its size and the result. Undo needs the real path, so the journal keeps it; the journal never leaves your Mac. The list of apps Aftertaste has seen installed is kept next to it. A Trace Report is different: its paths use <code>~</code>, and "Hide app names" replaces app names with App 1, App 2.</p>
+
+  <h2 id="privacy">Privacy</h2>
+  <h3>The app</h3>
+  <p>It collects nothing and sends nothing, because it makes no network connection at all. The card and report are made on your Mac. Nothing is shared unless you copy or save one yourself.</p>
+  <h3>This website</h3>
+  <p>It sets no cookies, runs no analytics, loads no third-party scripts, fonts or images, and makes no request beyond its own files. A strict content policy enforces that in your browser. The site is hosted on GitHub Pages, which keeps its own server logs under <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub's privacy statement</a>; we do not receive them.</p>
+
+  <h2 id="trust">Why you can check all of this</h2>
+  <ul>
+    <li>It is MIT licensed and has no third-party dependencies in version 1.</li>
+    <li>The rules are written down in the repository, and the mechanical ones are scripts you can run yourself.</li>
+    <li>Builds come only from <a href="https://github.com/EverydayOpen/aftertaste/releases" rel="noopener">GitHub Releases</a>, with a checksum in the notes.</li>
+  </ul>
+  <p>To report a vulnerability, or a way to make Aftertaste move something it should not, see the <a href="https://github.com/EverydayOpen/aftertaste/security/policy" rel="noopener">security policy</a>.</p>
+  <p class="note">Aftertaste is not affiliated with or endorsed by any app it detects.</p>
+</article>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-cols">
+      <div>
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/aftertaste/download/">Download</a></li>
+          <li><a href="/aftertaste/changelog/">Changelog</a></li>
+          <li><a href="https://github.com/EverydayOpen/aftertaste" rel="noopener">Source code</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>How it works</h2>
+        <ul>
+          <li><a href="/aftertaste/how-it-decides/">How it decides</a></li>
+          <li><a href="/aftertaste/what-it-reads/">What it reads, what it never does</a></li>
+          <li><a href="/aftertaste/what-it-reads/#privacy">Privacy</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Guides</h2>
+        <ul>
+          <li><a href="/aftertaste/guides/does-uninstalling-a-mac-app-delete-everything/">What an uninstall leaves</a></li>
+          <li><a href="/aftertaste/guides/is-it-safe-to-delete-library-leftovers-mac/">Library leftovers</a></li>
+          <li><a href="/aftertaste/guides/can-deleted-files-be-recovered-mac-apfs-ssd-filevault/">Recovery on a Mac</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Help</h2>
+        <ul>
+          <li><a href="https://github.com/EverydayOpen/aftertaste/issues" rel="noopener">Report a problem</a></li>
+          <li><a href="https://github.com/EverydayOpen/aftertaste/issues/new?template=wrong-match.yml" rel="noopener">Report a wrong match</a></li>
+          <li><a href="https://github.com/EverydayOpen/aftertaste/security/policy" rel="noopener">Security policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="official"><svg aria-hidden="true"><use href="#i-check"/></svg><span>The only official site is https://everydayopen.github.io/aftertaste. Downloads come only from github.com/EverydayOpen/aftertaste/releases.</span></p>
+    <p class="fine"><a class="tag plain" href="/aftertaste/changelog/">1.0 coming soon</a>© 2026 EverydayOpen. Aftertaste is free and open source under the MIT License.</p>
+    <p class="fine">Aftertaste is not affiliated with or endorsed by any app it detects. Their names appear only to say what Aftertaste looks for. Apple, Mac and macOS are trademarks of Apple Inc.</p>
+  </div>
+</footer>
+</body>
+</html>

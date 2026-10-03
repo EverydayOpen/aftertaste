@@ -1,0 +1,38 @@
+# Aftertaste
+
+> Find what apps leave behind. See why. Move it to the Trash. Undo.
+
+Aftertaste is a free, open-source Mac app (MIT License; macOS 13 or later, Apple silicon and Intel). It finds what an app you removed left behind (caches, preferences, containers, saved state, launch items), shows why each item belongs to it with a confidence tier, moves the items you choose to the Trash so you can undo, and produces a Trace Report: a card of measured numbers. It is not affiliated with or endorsed by any app it detects.
+
+Status: In development. No public release yet. Nothing has run on a real Mac with a real Library yet, so read everything described here as the design, not as proof that it works. The changelog will say what testers have tried.
+
+Trust box
+- It reads folder and file names and sizes in your Library, never file contents. It never requires Full Disk Access: when macOS blocks a folder it says so and offers an optional Settings shortcut, and it works without it. It makes no network connections.
+- Two verbs only: Move to Trash and Undo. It never deletes, overwrites or empties the Trash. Every move is written to a local journal first; if that fails, nothing moves.
+- Only High items are ticked: an exact bundle ID match in a place that rebuilds itself or holds only settings. Medium may hold your data and needs an extra switch. Review is shared or ambiguous and moves one item at a time. Hands off and Needs admin are listed with the reason and never moved. Launch agents and privileged helpers are listed, not removed.
+- Every report says where it could not look ("Looked in 25 of 26 places. 1 protected by macOS.") and what no app can erase: snapshots, backups, iCloud copies, system logs, keychain items, login-item records.
+- The Erase readiness page reads FileVault, the disk type and the local snapshot count, read-only, and points to Apple's Erase All Content and Settings.
+
+It will never say: securely erased, unrecoverable, forensic-proof, military grade, shredded, wiped, guaranteed, certified, compliant, "clean your Mac". (no-claim-ok: this line lists claims the app and site never make; CI enforces it)
+
+- Download: https://everydayopen.github.io/aftertaste/download/
+- Source and support: https://github.com/EverydayOpen/aftertaste
+- Report a wrong match: https://github.com/EverydayOpen/aftertaste/issues/new?template=wrong-match.yml
+
+## Pages
+
+- [Aftertaste for Mac: find what an uninstalled app left behind, and why](https://everydayopen.github.io/aftertaste/): Aftertaste finds what an app you removed left behind on your Mac, shows why each item belongs to it, moves the ones you choose to the Trash so you can undo, and gives you a receipt. Free, open source, offline.
+- [What's New · Aftertaste](https://everydayopen.github.io/aftertaste/changelog/): Every Aftertaste release and what changed in it. Also available as an RSS feed.
+- [Download Aftertaste for Mac](https://everydayopen.github.io/aftertaste/download/): Download Aftertaste for Mac, free: find what apps leave behind and move it to the Trash with Undo. Requires macOS 13 or later. Unsigned beta builds come from GitHub Releases only.
+- [Guides: what an uninstalled Mac app leaves behind · Aftertaste](https://everydayopen.github.io/aftertaste/guides/): Plain answers, with sources, about what a Mac app leaves behind after you remove it: which Library folders hold what, which are worth keeping, and which copies of a deleted file can still be read.
+- [Can deleted files be recovered on a Mac? (APFS, SSD, FileVault)](https://everydayopen.github.io/aftertaste/guides/can-deleted-files-be-recovered-mac-apfs-ssd-filevault/): What emptying the Trash does on a Mac, what snapshots, Time Machine and iCloud keep, why overwriting a file does not do what it sounds like on flash storage, and what encryption changes. With sources.
+- [Does uninstalling a Mac app delete everything?](https://everydayopen.github.io/aftertaste/guides/does-uninstalling-a-mac-app-delete-everything/): No. Dragging an app to the Trash removes the app, not what it wrote in your Library. What stays, folder by folder, with figures from the Homebrew cask data, how to look yourself, and what no app can see.
+- [Is it safe to delete ~/Library leftovers?](https://everydayopen.github.io/aftertaste/guides/is-it-safe-to-delete-library-leftovers-mac/): Which leftovers in your Mac's Library rebuild themselves, which only reset an app, which may be your only copy, which belong to more than one app, and which to leave alone. Five kinds, with what to check first.
+- [How Aftertaste decides what belongs to an app](https://everydayopen.github.io/aftertaste/how-it-decides/): The rules Aftertaste uses to match a leftover to an app: an exact bundle ID, what rebuilds itself, what may hold your data, what may be shared, and what is never touched. Five tiers, each with the reason shown.
+- [What Aftertaste reads, and what it never does](https://everydayopen.github.io/aftertaste/what-it-reads/): Everything Aftertaste reads, everything it never does, how a move to the Trash works step by step, the safety rules it is built under, what its journal holds, and what this website collects (nothing). Free, open source, offline.
+
+## Feeds
+
+- [Changelog RSS](https://everydayopen.github.io/aftertaste/feed.xml)
+
+Aftertaste is not affiliated with or endorsed by any app it detects. App names appear only to say what Aftertaste looks for.

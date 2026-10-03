@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Does uninstalling a Mac app delete everything?</title>
+<meta name="description" content="No. Dragging an app to the Trash removes the app, not what it wrote in your Library. What stays, folder by folder, with figures from the Homebrew cask data, how to look yourself, and what no app can see.">
+<link rel="canonical" href="https://everydayopen.github.io/aftertaste/guides/does-uninstalling-a-mac-app-delete-everything/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f5fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0e15" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Aftertaste">
+<meta property="og:title" content="Does uninstalling a Mac app delete everything?">
+<meta property="og:description" content="No. Dragging an app to the Trash removes the app, not what it wrote in your Library. What stays, folder by folder, with figures from the Homebrew cask data, how to look yourself, and what no app can see.">
+<meta property="og:url" content="https://everydayopen.github.io/aftertaste/guides/does-uninstalling-a-mac-app-delete-everything/">
+<meta property="og:image" content="https://everydayopen.github.io/aftertaste/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sample data: a Trace Report card with two fading outlines behind it. Orbit Meet 6.2 left behind: 214 files, 1.3 GB, 2 launch agents, 1 privileged helper. Looked in 25 of 26 places. 1 protected by macOS.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="/aftertaste/favicon.png">
+<link rel="apple-touch-icon" href="/aftertaste/apple-touch-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Aftertaste changelog" href="/aftertaste/feed.xml">
+<link rel="stylesheet" href="/aftertaste/styles.css">
+<script src="/aftertaste/motion.js" defer></script>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M4.5 19.5h15"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="3.4 2.8" d="M11 5H7.5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3v-4"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2.2" fill="currentColor"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></g></symbol>
+  <symbol id="k-app" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="k-cache" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4.5 7.5h15M4.5 12h15M4.5 16.5h15"/></symbol>
+  <symbol id="k-logs" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M8.5 9h7M8.5 13h7M8.5 17h4"/></g></symbol>
+  <symbol id="k-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2.2"/><circle cx="15" cy="16" r="2.2"/></g></symbol>
+  <symbol id="k-state" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9.5h17"/></g></symbol>
+  <symbol id="k-data" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="k-launch" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M10 8.5l5 3.5-5 3.5z"/></g></symbol>
+  <symbol id="k-shared" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="12" height="12" rx="3"/><rect x="8.5" y="8.5" width="12" height="12" rx="3"/></g></symbol>
+  <symbol id="g-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></g></symbol>
+  <symbol id="g-wifi-off" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 9.5a14 14 0 0 1 18 0M6 13a9.5 9.5 0 0 1 12 0M9.2 16.4a5 5 0 0 1 5.6 0M12 19.5h.01M4 4l16 16"/></symbol>
+  <symbol id="g-log" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l4 4v13H6z"/><path d="M14.5 3.5v4.5H19M9 12.5h7M9 16h5"/></g></symbol>
+  <symbol id="g-hand" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></g></symbol>
+</svg>
+<header class="site-header">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="/aftertaste/"><img src="/aftertaste/favicon.png" width="28" height="28" alt=""><span>Aftertaste</span></a>
+    <ul class="nav-links">
+      <li><a href="/aftertaste/how-it-decides/">How it decides</a></li>
+      <li><a href="/aftertaste/what-it-reads/">What it reads</a></li>
+      <li><a href="/aftertaste/guides/">Guides</a></li>
+    </ul>
+    <a class="button secondary small" href="https://github.com/EverydayOpen/aftertaste" rel="noopener">Source</a>
+    <a class="button small" href="/aftertaste/download/">Download</a>
+  </nav>
+</header>
+<main id="main" tabindex="-1">
+<article class="read prose guide">
+  <p class="eyebrow"><b>G1</b> · Guide · Checked 3 October 2026 · macOS</p>
+  <h1>Does uninstalling a Mac app delete everything?</h1>
+
+  <div class="summary">
+    <h2>The short answer</h2>
+    <ol>
+      <li>No. Dragging an app to the Trash removes the app bundle. What the app wrote in your Library stays, and Apple says so: deleting an app does not remove the documents or other files you made with it.</li>
+      <li>For most apps something stays. In Homebrew's cask data, 4,734 of 7,772 casks list leftover paths, and the folders named most often are Preferences, Application Support, Saved Application State and Caches.</li>
+      <li>Some of it rebuilds itself and some of it is your own data, so sort it before you remove anything, and move it to the Trash instead of deleting it.</li>
+    </ol>
+  </div>
+
+  <h2 id="trash">What the Trash removes</h2>
+  <p>The app itself: the <code>.app</code> bundle in Applications, or in the Applications folder of your home folder. If an app ships its own uninstaller, <a href="https://support.apple.com/en-us/102610" rel="noopener">Apple's advice is to use that</a>, because it can remove login items, extensions and other data the app stored elsewhere. If it does not, you drag the app to the Trash, and the space is freed when you empty the Trash.</p>
+  <p>Nothing else is removed. The app's preferences, caches, saved window state, containers, logs and helpers are separate files in other folders.</p>
+
+  <h2 id="stays">What stays, by folder</h2>
+  <p>A cask is a Homebrew recipe for installing a Mac app, and many carry a <a href="https://docs.brew.sh/Cask-Cookbook" rel="noopener">zap entry</a>: the author's list of what an uninstall leaves behind. We counted the public catalogue on 3 October 2026. It is a hint from people who maintain apps, not a complete inventory. The percentages below are the share of the 4,734 casks with a zap entry that list that kind of place. The tag is the highest tier Aftertaste gives an exact bundle-ID match there.</p>
+  <ul class="rows card">
+    <li class="ro hi"><span class="t"><b>Preferences</b><code>~/Library/Preferences/&lt;bundle ID&gt;.plist</code></span><span class="sz">75.5 %</span><em class="tag violet">High</em><p>The app's settings. A reinstall starts with defaults. A licence key or a sign-in can live here.</p></li>
+    <li class="ro"><span class="t"><b>Application Support</b><code>~/Library/Application Support/&lt;ID or name&gt;</code></span><span class="sz">64.9 %</span><em class="tag">Medium</em><p>Databases, licences, plug-ins, project files. The most likely place for your own data, and the most shared one.</p></li>
+    <li class="ro hi"><span class="t"><b>Saved Application State</b><code>~/Library/Saved Application State/&lt;ID&gt;.savedState</code></span><span class="sz">48.1 %</span><em class="tag violet">High</em><p>Window positions and what was open. Rebuilt automatically.</p></li>
+    <li class="ro hi"><span class="t"><b>Caches</b><code>~/Library/Caches/&lt;ID&gt;</code></span><span class="sz">46.5 %</span><em class="tag violet">High</em><p>Copies of things the app can fetch or compute again. Rebuilt automatically.</p></li>
+    <li class="ro hi"><span class="t"><b>HTTPStorages</b><code>~/Library/HTTPStorages/&lt;ID&gt;</code></span><span class="sz">24.1 %</span><em class="tag violet">High</em><p>Cookies and credentials kept for the app's web requests. You would sign in again.</p></li>
+    <li class="ro hi"><span class="t"><b>Logs</b><code>~/Library/Logs/&lt;ID or name&gt;</code></span><span class="sz">18.8 %</span><em class="tag violet">High</em><p>Old logs and crash reports. Nothing depends on them. A match by name only is Review.</p></li>
+    <li class="ro"><span class="t"><b>Containers</b><code>~/Library/Containers/&lt;ID&gt;</code></span><span class="sz">14.7 %</span><em class="tag">Medium</em><p>A sandboxed app's whole world, including documents it kept for you. Often the only copy.</p></li>
+    <li class="ro"><span class="t"><b>Application Scripts</b><code>~/Library/Application Scripts/&lt;ID&gt;</code></span><span class="sz">14.0 %</span><em class="tag">Medium</em><p>Scripts for sandboxed apps and extensions. You may have written them.</p></li>
+    <li class="ro hi"><span class="t"><b>WebKit</b><code>~/Library/WebKit/&lt;ID&gt;</code></span><span class="sz">10.5 %</span><em class="tag violet">High</em><p>Local storage and caches of web views inside the app.</p></li>
+    <li class="ro"><span class="t"><b>Group Containers</b><code>~/Library/Group Containers/&lt;Team ID&gt;.&lt;name&gt;</code></span><span class="sz">5.7 %</span><em class="tag">Review</em><p>Shared by an app, its extensions and other apps from the same developer. Review at best, never ticked.</p></li>
+    <li class="ro"><span class="t"><b>LaunchAgents</b><code>~/Library/LaunchAgents/&lt;label&gt;.plist</code></span><span class="sz">2.0 %</span><em class="tag">Hands off</em><p>Starts a background job at login. Removing the file does not stop a job that is already loaded.</p></li>
+  </ul>
+  <p>Outside your home folder, in <code>/Library</code>, the same cask data names helpers and daemons (about 1.0 % list a launch daemon, 0.4 % a privileged helper) and installer receipts (0.1 %). Those need an administrator to change, so Aftertaste lists them, with the reason, and does not remove them.</p>
+
+  <h2 id="look">How to look yourself</h2>
+  <ol class="rules">
+    <li><h3>Open the Library</h3><p>In Finder, choose Go › Go to Folder, type <code>~/Library</code> and press Return. The Library is hidden by default; holding Option while you open the Go menu also shows it.</p><code>⇧⌘G</code></li>
+    <li><h3>Find the app's bundle ID</h3><p>It is a reverse-domain name such as <code>com.example.orbitmeet</code>. Right-click the app, choose Show Package Contents, open <code>Contents/Info.plist</code> and read <code>CFBundleIdentifier</code>. Or, with the app still installed: <code>mdls -name kMDItemCFBundleIdentifier /Applications/Name.app</code>.</p><code>CFBundleIdentifier</code></li>
+    <li><h3>Search each folder for that ID</h3><p>Look in the folders above for an item named with the ID. A name that only resembles the app is weaker evidence than an exact ID.</p><code>exact id</code></li>
+    <li><h3>Move, don't delete</h3><p>Drag what you are sure of to the Trash. You can put it back until you empty it.</p><code>Trash</code></li>
+  </ol>
+
+  <h2 id="keep">What is worth keeping</h2>
+  <ul>
+    <li><b>Settings you may want back.</b> If you might reinstall the app, its Preferences file carries your choices.</li>
+    <li><b>Documents inside Application Support or a Container.</b> Notes, recordings, databases and project files sometimes live there. Open the folder and look before you move it.</li>
+    <li><b>Licence files.</b> Some apps keep a licence or an activation record in Application Support or Preferences. Keep it if you paid for the app and may come back.</li>
+    <li><b>Anything for a subscription.</b> Apple notes that deleting an app does not cancel a subscription bought through it.</li>
+  </ul>
+
+  <h2 id="unseen">What no app sees</h2>
+  <p>Even a careful look in the Library misses records that live elsewhere: keychain items, login and background item records, Launch Services and Spotlight entries, iCloud copies, other users' accounts, and backups and snapshots. Aftertaste says "Not covered" about all of them. The Library is also not fully readable to an ordinary app: macOS protects some folders, mostly Containers and Group Containers, and a good tool says "protected by macOS" instead of "nothing found".</p>
+
+  <h2 id="aftertaste">Doing this with Aftertaste</h2>
+  <p>We make Aftertaste, a free, open-source Mac app built around this folder list. It matches exact bundle IDs first, ticks only what rebuilds itself or is only settings, shows the reason for every item, moves the ones you choose to the Trash, and keeps a journal so Undo works. One bar per app shows where the bytes are:</p>
+  <div class="card group">
+    <div class="rbar" role="img" aria-label="Sample data: one bar for Orbit Meet 6.2. High, selected: caches 412 MB, logs 22.4 MB. Medium, not selected: saved state, WebKit 65.3 MB; web storage, settings 1.6 MB; your data 796 MB. 2 launch agents, listed only."><i class="hi"></i><i class="hi"></i><i></i><i></i><i></i><i></i></div>
+    <ul class="rbar-key" aria-hidden="true"><li class="hi">Caches 412 MB</li><li class="hi">Logs 22.4 MB</li><li>Saved state, WebKit 65.3 MB</li><li>Web storage, settings 1.6 MB</li><li>Your data 796 MB</li><li>Launch agents 2</li></ul>
+    <p class="rbar-sum">435 MB selected (rebuilds itself) · 863 MB not selected · 2 launch agents listed</p>
+  </div>
+  <p class="note">Sample data for a made-up app. In development. No public release yet. <a href="/aftertaste/how-it-decides/">How it decides</a>. Aftertaste is not affiliated with or endorsed by any app it detects.</p>
+
+  <h2 id="sources">Sources</h2>
+  <ul class="sources">
+    <li>Apple Support: <a href="https://support.apple.com/en-us/102610" rel="noopener">Delete or uninstall apps on Mac</a> (documents and files you made are not removed; use the app's own uninstaller if it has one; Empty Trash frees the space)</li>
+    <li>Homebrew: <a href="https://docs.brew.sh/Cask-Cookbook" rel="noopener">Cask Cookbook</a>, the <code>zap</code> stanza</li>
+    <li>Homebrew: <a href="https://formulae.brew.sh/api/cask.json" rel="noopener">the public cask catalogue</a>. 4,734 of 7,772 casks had a zap entry on 3 October 2026; the folder shares are our count of that data</li>
+  </ul>
+</article>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-cols">
+      <div>
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/aftertaste/download/">Download</a></li>
+          <li><a href="/aftertaste/changelog/">Changelog</a></li>
+          <li><a href="https://github.com/EverydayOpen/aftertaste" rel="noopener">Source code</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>How it works</h2>
+        <ul>
+          <li><a href="/aftertaste/how-it-decides/">How it decides</a></li>
+          <li><a href="/aftertaste/what-it-reads/">What it reads, what it never does</a></li>
+          <li><a href="/aftertaste/what-it-reads/#privacy">Privacy</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Guides</h2>
+        <ul>
+          <li><a href="/aftertaste/guides/does-uninstalling-a-mac-app-delete-everything/">What an uninstall leaves</a></li>
+          <li><a href="/aftertaste/guides/is-it-safe-to-delete-library-leftovers-mac/">Library leftovers</a></li>
+          <li><a href="/aftertaste/guides/can-deleted-files-be-recovered-mac-apfs-ssd-filevault/">Recovery on a Mac</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Help</h2>
+        <ul>
+          <li><a href="https://github.com/EverydayOpen/aftertaste/issues" rel="noopener">Report a problem</a></li>
+          <li><a href="https://github.com/EverydayOpen/aftertaste/issues/new?template=wrong-match.yml" rel="noopener">Report a wrong match</a></li>
+          <li><a href="https://github.com/EverydayOpen/aftertaste/security/policy" rel="noopener">Security policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="official"><svg aria-hidden="true"><use href="#i-check"/></svg><span>The only official site is https://everydayopen.github.io/aftertaste. Downloads come only from github.com/EverydayOpen/aftertaste/releases.</span></p>
+    <p class="fine"><a class="tag plain" href="/aftertaste/changelog/">1.0 coming soon</a>© 2026 EverydayOpen. Aftertaste is free and open source under the MIT License.</p>
+    <p class="fine">Aftertaste is not affiliated with or endorsed by any app it detects. Their names appear only to say what Aftertaste looks for. Apple, Mac and macOS are trademarks of Apple Inc.</p>
+  </div>
+</footer>
+</body>
+</html>
